@@ -18,21 +18,43 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 // ─── ADMIN AUTH ───────────────────────────────────────────────────────────────
 
-export async function signAdminToken(adminPayload: { username: string; email: string }): Promise<string> {
-  return new SignJWT({ ...adminPayload, role: 'admin' })
+export async function signAdminToken(adminPayload: {
+  username: string;
+  email: string;
+  id?: string;
+  name?: string;
+  role?: string;
+  phone?: string;
+}): Promise<string> {
+  return new SignJWT({
+    ...adminPayload,
+    role: 'admin',
+    adminRole: adminPayload.role || 'superadmin',
+  })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
     .sign(JWT_SECRET);
 }
 
-export async function verifyAdminToken(token: string): Promise<{ username: string; email: string } | null> {
+export async function verifyAdminToken(token: string): Promise<{
+  username: string;
+  email: string;
+  id?: string;
+  name?: string;
+  role?: string;
+  phone?: string;
+} | null> {
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET);
     if (payload.role === 'admin') {
       return {
         username: payload.username as string,
         email: payload.email as string,
+        id: payload.id as string | undefined,
+        name: payload.name as string | undefined,
+        role: (payload.adminRole || payload.role) as string,
+        phone: payload.phone as string | undefined,
       };
     }
     return null;

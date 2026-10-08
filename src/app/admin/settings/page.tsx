@@ -272,10 +272,18 @@ export default function AdminSettingsPage() {
 
         {/* Admin Credentials Change Box */}
         <div className="mt-10 bg-white p-6 sm:p-8 rounded-3xl border border-amber-200 shadow-sm space-y-4">
-          <h2 className="font-serif font-bold text-base text-craft-950 pb-2 border-b border-craft-200 flex items-center gap-2">
-            <Lock className="w-4 h-4 text-amber-600" />
-            <span>Admin Account Security & Credentials</span>
-          </h2>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-craft-200 gap-2">
+            <h2 className="font-serif font-bold text-base text-craft-950 flex items-center gap-2">
+              <Lock className="w-4 h-4 text-amber-600" />
+              <span>Super Admin Credentials & Multi-User Access</span>
+            </h2>
+            <a
+              href="/admin/team"
+              className="text-xs font-bold text-terracotta-700 hover:text-terracotta-800 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl transition-colors self-start sm:self-auto"
+            >
+              👥 Manage All 3 Admin Accounts & 2FA →
+            </a>
+          </div>
 
           {credMsg && (
             <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold flex items-center gap-2">

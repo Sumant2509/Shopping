@@ -223,12 +223,12 @@
       "totalAmount": 559,
       "paymentMethod": "UPI",
       "paymentStatus": "PAID",
-      "orderStatus": "CONFIRMED",
+      "orderStatus": "PROCESSING",
       "estimatedDeliveryDate": "Tue, 13 Oct, 2026",
       "notes": "",
       "id": "ord-1791404965764",
       "createdAt": "2026-10-07T20:29:25.764Z",
-      "updatedAt": "2026-10-07T20:29:25.764Z"
+      "updatedAt": "2026-10-08T14:01:49.788Z"
     },
     {
       "orderNumber": "SKM-2026-7850",
@@ -265,12 +265,12 @@
       "totalAmount": 509,
       "paymentMethod": "UPI",
       "paymentStatus": "PAID",
-      "orderStatus": "DELIVERED",
+      "orderStatus": "PROCESSING",
       "estimatedDeliveryDate": "Sun, 11 Oct, 2026",
       "notes": "",
       "id": "ord-1791281795697",
       "createdAt": "2026-10-06T10:16:35.697Z",
-      "updatedAt": "2026-10-06T18:18:53.814Z"
+      "updatedAt": "2026-10-08T14:01:50.890Z"
     },
     {
       "orderNumber": "SKM-2026-4605",
@@ -307,12 +307,12 @@
       "totalAmount": 509,
       "paymentMethod": "COD",
       "paymentStatus": "PENDING",
-      "orderStatus": "CONFIRMED",
+      "orderStatus": "PROCESSING",
       "estimatedDeliveryDate": "Sun, 11 Oct, 2026",
       "notes": "",
       "id": "ord-1791281342224",
       "createdAt": "2026-10-06T10:09:02.224Z",
-      "updatedAt": "2026-10-06T10:09:02.224Z"
+      "updatedAt": "2026-10-08T14:01:59.197Z"
     },
     {
       "id": "ord-1001",
@@ -353,12 +353,12 @@
       "paymentStatus": "PAID",
       "razorpayOrderId": "order_demo_1001",
       "razorpayPaymentId": "pay_demo_1001_upi",
-      "orderStatus": "PROCESSING",
+      "orderStatus": "PACKED",
       "trackingNumber": "DLV-9823471029",
       "courierPartner": "Delhivery Express",
       "estimatedDeliveryDate": "10 Oct 2026",
       "createdAt": "2026-10-04T11:20:00.000Z",
-      "updatedAt": "2026-10-06T10:09:36.403Z"
+      "updatedAt": "2026-10-08T14:01:56.343Z"
     },
     {
       "id": "ord-1002",
@@ -497,9 +497,43 @@
   },
   "adminUsers": [
     {
+      "id": "admin-1",
+      "name": "Sumant Kumar (Super Admin)",
       "username": "admin",
       "email": "mandaldevanand@gmail.com",
-      "passwordHash": "$2a$10$7Z2t5K2sP6aK7vFm7vPZ9.uWjXl8Yn2hVwO1wFv3Qo9K.qGvJ7Z2u"
+      "phone": "+91 8878112007",
+      "role": "superadmin",
+      "passwordHash": "$2a$10$7Z2t5K2sP6aK7vFm7vPZ9.uWjXl8Yn2hVwO1wFv3Qo9K.qGvJ7Z2u",
+      "isActive": true,
+      "mobileVerified": true,
+      "emailVerified": true,
+      "createdAt": "2026-10-01T10:00:00.000Z"
+    },
+    {
+      "id": "admin-2",
+      "name": "Devanand Mandal (Store Manager)",
+      "username": "manager",
+      "email": "operations@sumantcrafts.in",
+      "phone": "+91 9876543210",
+      "role": "manager",
+      "passwordHash": "$2a$10$xd8LgaBZgVrHGQOo1b9tJukGipjC4rJ3MyeRwET4z/4iRErF8D/NC",
+      "isActive": true,
+      "mobileVerified": true,
+      "emailVerified": true,
+      "createdAt": "2026-10-02T10:00:00.000Z"
+    },
+    {
+      "id": "admin-3",
+      "name": "Crafts Support & Inventory Lead",
+      "username": "support",
+      "email": "support@sumantcrafts.in",
+      "phone": "+91 9826012345",
+      "role": "support",
+      "passwordHash": "$2a$10$VENZtM45ryroki8HzM8Mb.gg0D69ckjQq4oYyaJHlxWSfN3uaGrJO",
+      "isActive": true,
+      "mobileVerified": true,
+      "emailVerified": true,
+      "createdAt": "2026-10-03T10:00:00.000Z"
     }
   ],
   "customers": [

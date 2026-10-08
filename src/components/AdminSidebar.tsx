@@ -14,7 +14,8 @@ import {
   LogOut, 
   ExternalLink,
   Store,
-  Users
+  Users,
+  ShieldCheck
 } from 'lucide-react';
 
 export function AdminSidebar() {
@@ -39,6 +40,7 @@ export function AdminSidebar() {
     { name: 'Customers', href: '/admin/customers', icon: Users },
     { name: 'Discount Coupons', href: '/admin/coupons', icon: Tag },
     { name: 'Reviews Moderation', href: '/admin/reviews', icon: Star },
+    { name: 'Admin Team & 2FA', href: '/admin/team', icon: ShieldCheck },
     { name: 'Store Settings', href: '/admin/settings', icon: Settings },
   ];
 

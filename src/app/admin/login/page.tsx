@@ -3,19 +3,92 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Lock, User, ShieldCheck, ArrowRight, Store, AlertCircle, KeyRound, CheckCircle2, RefreshCw } from 'lucide-react';
+import {
+  Lock,
+  User,
+  ShieldCheck,
+  ArrowRight,
+  Store,
+  AlertCircle,
+  KeyRound,
+  CheckCircle2,
+  RefreshCw,
+  Smartphone,
+  Mail,
+  Crown,
+  Briefcase,
+  Headphones,
+} from 'lucide-react';
+
+interface AdminAccountOption {
+  roleName: string;
+  username: string;
+  pass: string;
+  email: string;
+  phone: string;
+  icon: typeof Crown;
+  badgeColor: string;
+}
+
+const DEMO_ADMINS: AdminAccountOption[] = [
+  {
+    roleName: 'Super Admin',
+    username: 'admin',
+    pass: 'admin12345',
+    email: 'mandaldevanand@gmail.com',
+    phone: '+91 8878112007',
+    icon: Crown,
+    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+  },
+  {
+    roleName: 'Store Manager',
+    username: 'manager',
+    pass: 'manager12345',
+    email: 'operations@sumantcrafts.in',
+    phone: '+91 9876543210',
+    icon: Briefcase,
+    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+  },
+  {
+    roleName: 'Support & Dispatch',
+    username: 'support',
+    pass: 'support12345',
+    email: 'support@sumantcrafts.in',
+    phone: '+91 9826012345',
+    icon: Headphones,
+    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+  },
+];
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<'password' | 'otp'>('password');
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('admin12345');
+  const [channel, setChannel] = useState<'mobile' | 'email'>('mobile');
   const [otp, setOtp] = useState('');
   const [demoOtpNotice, setDemoOtpNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [verifiedUser, setVerifiedUser] = useState<{
+    id: string;
+    name: string;
+    username: string;
+    role: string;
+    maskedPhone: string;
+    maskedEmail: string;
+    phone: string;
+    email: string;
+  } | null>(null);
 
-  // Handle Step 1: Password submit
+  // Quick preset loader
+  const handleSelectDemoAdmin = (admin: AdminAccountOption) => {
+    setUsername(admin.username);
+    setPassword(admin.pass);
+    setError(null);
+  };
+
+  // Handle Step 1: Verify Password
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -25,18 +98,56 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, step: 'password' }),
+        body: JSON.stringify({
+          username,
+          password,
+          channel,
+          step: 'password',
+        }),
       });
 
       const data = await res.json();
       if (!res.ok || !data.success) {
         setError(data.error || 'Invalid credentials');
       } else if (data.requiresOtp) {
+        setVerifiedUser(data.user);
         setStep('otp');
-        setDemoOtpNotice(data.demoOtp ? `Demo 2FA OTP Code: ${data.demoOtp}` : null);
+        setChannel(data.channel || 'mobile');
+        setDemoOtpNotice(data.demoOtp ? `Demo 2FA OTP: ${data.demoOtp}` : null);
       }
     } catch {
       setError('Login request failed. Please check network connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Switch 2FA channel (Mobile SMS / Email)
+  const handleSwitchChannel = async (newChannel: 'mobile' | 'email') => {
+    if (loading || newChannel === channel) return;
+    setChannel(newChannel);
+    setLoading(true);
+    setError(null);
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          channel: newChannel,
+          step: 'switch_channel',
+        }),
+      });
+
+      const data = await res.json();
+      if (data.success && data.demoOtp) {
+        setDemoOtpNotice(`New 2FA OTP (${newChannel.toUpperCase()}): ${data.demoOtp}`);
+      } else if (data.error) {
+        setError(data.error);
+      }
+    } catch {
+      setError('Failed to switch verification channel.');
     } finally {
       setLoading(false);
     }
@@ -52,7 +163,12 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, otp, step: 'otp' }),
+        body: JSON.stringify({
+          username,
+          otp,
+          channel,
+          step: 'otp',
+        }),
       });
 
       const data = await res.json();
@@ -77,11 +193,15 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, step: 'password' }),
+        body: JSON.stringify({
+          username,
+          channel,
+          step: 'resend_otp',
+        }),
       });
       const data = await res.json();
       if (data.demoOtp) {
-        setDemoOtpNotice(`New 2FA OTP Code: ${data.demoOtp}`);
+        setDemoOtpNotice(`New 2FA OTP (${channel.toUpperCase()}): ${data.demoOtp}`);
       }
     } catch {
       setError('Failed to resend OTP.');
@@ -100,11 +220,48 @@ export default function AdminLoginPage() {
           Sumant Crafts Admin
         </h2>
         <p className="mt-1 text-xs text-amber-300 font-medium uppercase tracking-wider">
-          {step === 'password' ? 'Store Management Portal' : '2-Factor Security OTP Verification'}
+          {step === 'password'
+            ? 'Multi-Admin Portal Access'
+            : '2-Factor Security Verification (Mobile & Email)'}
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+        {/* Quick Demo Admin Selector */}
+        {step === 'password' && (
+          <div className="mb-4 bg-craft-900/90 border border-craft-800 rounded-2xl p-3.5">
+            <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wider mb-2">
+              Select Admin User Account:
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {DEMO_ADMINS.map((adm) => {
+                const Icon = adm.icon;
+                const isSelected = username === adm.username;
+                return (
+                  <button
+                    key={adm.username}
+                    type="button"
+                    onClick={() => handleSelectDemoAdmin(adm)}
+                    className={`p-2 rounded-xl text-left border transition-all text-xs flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-craft-800 border-amber-400 text-white ring-1 ring-amber-400'
+                        : 'bg-craft-950/60 border-craft-800 text-craft-400 hover:border-craft-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <Icon className="w-3.5 h-3.5 text-amber-400" />
+                      <span className="font-bold truncate text-[11px]">{adm.roleName}</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-craft-300 truncate">
+                      @{adm.username}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         <div className="bg-craft-900 py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-craft-800">
           {error && (
             <div className="mb-5 bg-red-900/40 border border-red-700/60 text-red-200 p-3.5 rounded-xl flex items-center gap-2 text-xs">
@@ -119,7 +276,9 @@ export default function AdminLoginPage() {
                 <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
                 <span className="font-mono font-bold tracking-widest">{demoOtpNotice}</span>
               </div>
-              <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-300">Master: 887811</span>
+              <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-300">
+                Master: 887811
+              </span>
             </div>
           )}
 
@@ -136,6 +295,7 @@ export default function AdminLoginPage() {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. admin, manager, support"
                     className="w-full pl-10 pr-3.5 py-2.5 bg-craft-950 border border-craft-700 rounded-xl text-xs text-white focus:outline-none focus:border-terracotta-500 font-medium"
                   />
                 </div>
@@ -157,10 +317,36 @@ export default function AdminLoginPage() {
                 </div>
               </div>
 
-              <div className="p-3 bg-craft-950/80 rounded-xl border border-craft-800 text-[11px] text-craft-400 space-y-1">
-                <p className="font-bold text-amber-300">Demo Credentials:</p>
-                <p>Username: <strong className="text-white font-mono">admin</strong></p>
-                <p>Password: <strong className="text-white font-mono">admin12345</strong></p>
+              <div>
+                <label className="block text-xs font-bold text-craft-300 uppercase tracking-wider mb-1.5">
+                  Preferred 2FA Verification Channel
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setChannel('mobile')}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-medium transition-all ${
+                      channel === 'mobile'
+                        ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+                        : 'bg-craft-950 border-craft-800 text-craft-400 hover:text-white'
+                    }`}
+                  >
+                    <Smartphone className="w-3.5 h-3.5" />
+                    <span>Mobile SMS</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChannel('email')}
+                    className={`flex items-center justify-center gap-2 py-2 px-3 rounded-xl border text-xs font-medium transition-all ${
+                      channel === 'email'
+                        ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+                        : 'bg-craft-950 border-craft-800 text-craft-400 hover:text-white'
+                    }`}
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Email OTP</span>
+                  </button>
+                </div>
               </div>
 
               <button
@@ -172,7 +358,7 @@ export default function AdminLoginPage() {
                   <span>Checking Credentials...</span>
                 ) : (
                   <>
-                    <span>Verify Credentials & Get OTP</span>
+                    <span>Verify Credentials & Send OTP</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
@@ -188,7 +374,7 @@ export default function AdminLoginPage() {
                     const res = await fetch('/api/admin/login', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ username: 'admin', password: 'admin12345', step: 'direct' }),
+                      body: JSON.stringify({ username, password, step: 'direct' }),
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -205,11 +391,68 @@ export default function AdminLoginPage() {
                 }}
                 className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors"
               >
-                <span>🚀 Instant 1-Click Admin Access (Demo)</span>
+                <span>🚀 Instant 1-Click Admin Access</span>
               </button>
             </form>
           ) : (
             <form onSubmit={handleOtpSubmit} className="space-y-4">
+              {/* Active Admin Profile Card */}
+              {verifiedUser && (
+                <div className="bg-craft-950/90 border border-craft-800 rounded-2xl p-3.5 flex items-center justify-between">
+                  <div>
+                    <p className="text-white text-xs font-bold">{verifiedUser.name}</p>
+                    <p className="text-craft-400 text-[11px] font-mono">@{verifiedUser.username}</p>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-lg border bg-amber-500/10 border-amber-500/30 text-amber-300">
+                    {verifiedUser.role}
+                  </span>
+                </div>
+              )}
+
+              {/* 2FA Channel Switcher */}
+              <div>
+                <label className="block text-xs font-bold text-craft-300 uppercase tracking-wider mb-1.5">
+                  Select Verification Channel:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchChannel('mobile')}
+                    className={`flex flex-col items-start p-2.5 rounded-xl border transition-all text-xs ${
+                      channel === 'mobile'
+                        ? 'bg-amber-500/20 border-amber-400 text-white'
+                        : 'bg-craft-950 border-craft-800 text-craft-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 font-bold mb-0.5">
+                      <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Mobile SMS</span>
+                    </span>
+                    <span className="text-[10px] text-craft-300 truncate">
+                      {verifiedUser?.maskedPhone || '+91 88*** ***07'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchChannel('email')}
+                    className={`flex flex-col items-start p-2.5 rounded-xl border transition-all text-xs ${
+                      channel === 'email'
+                        ? 'bg-amber-500/20 border-amber-400 text-white'
+                        : 'bg-craft-950 border-craft-800 text-craft-400 hover:text-white'
+                    }`}
+                  >
+                    <span className="flex items-center gap-1.5 font-bold mb-0.5">
+                      <Mail className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Email OTP</span>
+                    </span>
+                    <span className="text-[10px] text-craft-300 truncate">
+                      {verifiedUser?.maskedEmail || 'ma***@gmail.com'}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-craft-300 uppercase tracking-wider mb-1.5">
                   Enter 6-Digit Security OTP
@@ -227,7 +470,10 @@ export default function AdminLoginPage() {
                   />
                 </div>
                 <p className="text-[11px] text-craft-400 mt-2">
-                  Enter the 6-digit OTP code sent to your registered Admin Mobile / Email.
+                  OTP was sent via {channel === 'mobile' ? 'Mobile SMS' : 'Email'} to{' '}
+                  <span className="text-amber-300 font-mono">
+                    {channel === 'mobile' ? verifiedUser?.maskedPhone : verifiedUser?.maskedEmail}
+                  </span>
                 </p>
               </div>
 
@@ -276,7 +522,7 @@ export default function AdminLoginPage() {
             </Link>
 
             <span className="text-[10px] text-craft-500 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" /> 2FA OTP Protected
+              <ShieldCheck className="w-3 h-3 text-emerald-400" /> Dual 2FA Protected
             </span>
           </div>
         </div>

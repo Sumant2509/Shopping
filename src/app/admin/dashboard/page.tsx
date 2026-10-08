@@ -13,7 +13,9 @@ import {
   PlusCircle, 
   Clock, 
   Star,
-  Users
+  Users,
+  ShieldCheck,
+  Smartphone
 } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { Order, Product } from '@/lib/types';
@@ -144,6 +146,35 @@ export default function AdminDashboardPage() {
               <span className="text-[10px] text-amber-800 font-semibold">Need Loom Restock</span>
             </div>
           </div>
+        </div>
+
+        {/* Multi-Admin & 2FA Status Banner */}
+        <div className="mb-8 bg-gradient-to-r from-craft-900 to-craft-950 rounded-3xl p-6 text-white border border-craft-800 shadow-warm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/40 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="font-serif font-bold text-base text-white">Multi-Admin Team & Dual 2FA Active</h3>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
+                  3 Staff Accounts
+                </span>
+              </div>
+              <p className="text-xs text-craft-300 mt-0.5">
+                Super Admin, Store Manager, and Support Lead are active with Mobile SMS and Email OTP verification.
+              </p>
+            </div>
+          </div>
+
+          <Link
+            href="/admin/team"
+            className="inline-flex items-center gap-2 bg-terracotta-700 hover:bg-terracotta-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-colors shrink-0"
+          >
+            <Smartphone className="w-4 h-4 text-amber-300" />
+            <span>Manage Admin Team & 2FA</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
         {/* Recent Orders Section */}

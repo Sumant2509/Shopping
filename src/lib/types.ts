@@ -166,3 +166,33 @@ export interface CustomerPublic {
   addresses: CustomerAddress[];
   createdAt: string;
 }
+
+export type AdminRole = 'superadmin' | 'manager' | 'support';
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+  role: AdminRole;
+  passwordHash: string;
+  isActive: boolean;
+  mobileVerified?: boolean;
+  emailVerified?: boolean;
+  createdAt: string;
+}
+
+export interface AdminUserPublic {
+  id: string;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+  role: AdminRole;
+  isActive: boolean;
+  mobileVerified?: boolean;
+  emailVerified?: boolean;
+  createdAt: string;
+}
+

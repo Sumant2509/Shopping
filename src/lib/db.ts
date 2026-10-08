@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { Product, Order, Coupon, Review, SiteSettings, Customer } from './types';
+import { Product, Order, Coupon, Review, SiteSettings, Customer, AdminUser } from './types';
 
 interface DatabaseSchema {
   products: Product[];
@@ -9,7 +9,7 @@ interface DatabaseSchema {
   coupons: Coupon[];
   reviews: Review[];
   siteSettings: SiteSettings;
-  adminUsers: { username: string; email: string; passwordHash: string }[];
+  adminUsers: AdminUser[];
   customers: Customer[];
 }
 
@@ -471,17 +471,86 @@ const INITIAL_DATA: DatabaseSchema = {
   },
   adminUsers: [
     {
+      id: "admin-1",
+      name: "Sumant Kumar (Super Admin)",
       username: "admin",
       email: "mandaldevanand@gmail.com",
+      phone: "+91 8878112007",
+      role: "superadmin",
       // bcrypt hash for "admin12345"
-      passwordHash: "$2a$10$7Z2t5K2sP6aK7vFm7vPZ9.uWjXl8Yn2hVwO1wFv3Qo9K.qGvJ7Z2u"
+      passwordHash: "$2a$10$7Z2t5K2sP6aK7vFm7vPZ9.uWjXl8Yn2hVwO1wFv3Qo9K.qGvJ7Z2u",
+      isActive: true,
+      mobileVerified: true,
+      emailVerified: true,
+      createdAt: "2026-10-01T10:00:00.000Z"
+    },
+    {
+      id: "admin-2",
+      name: "Devanand Mandal (Store Manager)",
+      username: "manager",
+      email: "operations@sumantcrafts.in",
+      phone: "+91 9876543210",
+      role: "manager",
+      // bcrypt hash for "manager12345"
+      passwordHash: "$2a$10$xd8LgaBZgVrHGQOo1b9tJukGipjC4rJ3MyeRwET4z/4iRErF8D/NC",
+      isActive: true,
+      mobileVerified: true,
+      emailVerified: true,
+      createdAt: "2026-10-02T10:00:00.000Z"
+    },
+    {
+      id: "admin-3",
+      name: "Crafts Support & Inventory Lead",
+      username: "support",
+      email: "support@sumantcrafts.in",
+      phone: "+91 9826012345",
+      role: "support",
+      // bcrypt hash for "support12345"
+      passwordHash: "$2a$10$VENZtM45ryroki8HzM8Mb.gg0D69ckjQq4oYyaJHlxWSfN3uaGrJO",
+      isActive: true,
+      mobileVerified: true,
+      emailVerified: true,
+      createdAt: "2026-10-03T10:00:00.000Z"
     }
   ],
   customers: []
 };
 
+function normalizeAdminUsers(admins?: any[]): AdminUser[] {
+  if (!admins || admins.length === 0) {
+    return [...INITIAL_DATA.adminUsers];
+  }
+  const merged = [...admins];
+  for (const initAdmin of INITIAL_DATA.adminUsers) {
+    const existingIdx = merged.findIndex(
+      (a: any) =>
+        a.username?.toLowerCase() === initAdmin.username.toLowerCase() ||
+        a.email?.toLowerCase() === initAdmin.email.toLowerCase()
+    );
+    if (existingIdx === -1) {
+      merged.push({ ...initAdmin });
+    } else {
+      merged[existingIdx] = {
+        ...initAdmin,
+        ...merged[existingIdx],
+        id: merged[existingIdx].id || initAdmin.id,
+        name: merged[existingIdx].name || initAdmin.name,
+        role: merged[existingIdx].role || initAdmin.role,
+        phone: merged[existingIdx].phone || initAdmin.phone,
+        isActive: merged[existingIdx].isActive !== undefined ? merged[existingIdx].isActive : true,
+        mobileVerified: merged[existingIdx].mobileVerified !== undefined ? merged[existingIdx].mobileVerified : true,
+        emailVerified: merged[existingIdx].emailVerified !== undefined ? merged[existingIdx].emailVerified : true,
+      };
+    }
+  }
+  return merged;
+}
+
 function ensureDbExists(): DatabaseSchema {
   if (memoryDb) {
+    if (!memoryDb.adminUsers || memoryDb.adminUsers.length < 3) {
+      memoryDb.adminUsers = normalizeAdminUsers(memoryDb.adminUsers);
+    }
     return memoryDb;
   }
 
@@ -490,7 +559,10 @@ function ensureDbExists(): DatabaseSchema {
     if (fs.existsSync(DB_FILE)) {
       const raw = fs.readFileSync(DB_FILE, 'utf-8');
       memoryDb = JSON.parse(raw);
-      return memoryDb!;
+      if (memoryDb) {
+        memoryDb.adminUsers = normalizeAdminUsers(memoryDb.adminUsers);
+        return memoryDb;
+      }
     }
   } catch (err) {
     console.warn('Could not read DB_FILE, attempting seed:', err);
@@ -506,6 +578,8 @@ function ensureDbExists(): DatabaseSchema {
   } catch (err) {
     seedData = INITIAL_DATA;
   }
+
+  seedData.adminUsers = normalizeAdminUsers(seedData.adminUsers);
 
   // 3. Try writing seed to writable DB location
   try {
@@ -717,16 +791,79 @@ export const db = {
     return data.siteSettings;
   },
 
-  // Admin user lookup
-  getAdminUser(usernameOrEmail: string) {
+  // Admin user operations
+  getAdminUsers(): AdminUser[] {
     const data = ensureDbExists();
     if (!data.adminUsers || data.adminUsers.length === 0) {
-      data.adminUsers = INITIAL_DATA.adminUsers;
+      data.adminUsers = [...INITIAL_DATA.adminUsers];
+      saveDb(data);
     }
+    return data.adminUsers;
+  },
+
+  getAdminUser(query: string): AdminUser | undefined {
+    const data = ensureDbExists();
+    if (!data.adminUsers || data.adminUsers.length === 0) {
+      data.adminUsers = [...INITIAL_DATA.adminUsers];
+      saveDb(data);
+    }
+    const q = query.toLowerCase().trim();
     return data.adminUsers.find(
-      u => u.username.toLowerCase() === usernameOrEmail.toLowerCase() ||
-           u.email.toLowerCase() === usernameOrEmail.toLowerCase()
+      u =>
+        u.id.toLowerCase() === q ||
+        u.username.toLowerCase() === q ||
+        u.email.toLowerCase() === q ||
+        (u.phone && u.phone.replace(/[^0-9]/g, '') === q.replace(/[^0-9]/g, ''))
     );
+  },
+
+  createAdminUser(admin: Omit<AdminUser, 'id' | 'createdAt'>): AdminUser {
+    const data = ensureDbExists();
+    const newAdmin: AdminUser = {
+      ...admin,
+      id: `admin-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+      createdAt: new Date().toISOString(),
+      isActive: admin.isActive !== undefined ? admin.isActive : true,
+      mobileVerified: admin.mobileVerified !== undefined ? admin.mobileVerified : true,
+      emailVerified: admin.emailVerified !== undefined ? admin.emailVerified : true,
+    };
+    data.adminUsers.push(newAdmin);
+    saveDb(data);
+    return newAdmin;
+  },
+
+  updateAdminUser(idOrUsername: string, updates: Partial<AdminUser>): AdminUser | null {
+    const data = ensureDbExists();
+    const q = idOrUsername.toLowerCase().trim();
+    const index = data.adminUsers.findIndex(
+      u => u.id.toLowerCase() === q || u.username.toLowerCase() === q || u.email.toLowerCase() === q
+    );
+    if (index === -1) return null;
+
+    data.adminUsers[index] = {
+      ...data.adminUsers[index],
+      ...updates,
+    };
+    saveDb(data);
+    return data.adminUsers[index];
+  },
+
+  deleteAdminUser(idOrUsername: string): boolean {
+    const data = ensureDbExists();
+    const q = idOrUsername.toLowerCase().trim();
+    // Safety guard: Must retain at least one superadmin
+    const superadmins = data.adminUsers.filter(a => a.role === 'superadmin');
+    const target = data.adminUsers.find(
+      u => u.id.toLowerCase() === q || u.username.toLowerCase() === q
+    );
+    if (!target) return false;
+    if (target.role === 'superadmin' && superadmins.length <= 1) {
+      throw new Error('Cannot delete the last remaining Super Admin account.');
+    }
+
+    data.adminUsers = data.adminUsers.filter(u => u.id !== target.id);
+    saveDb(data);
+    return true;
   },
 
   updateAdminCredentials(newUsername: string, newPasswordHash: string, newEmail?: string) {
@@ -735,6 +872,7 @@ export const db = {
       data.adminUsers = [...INITIAL_DATA.adminUsers];
     }
     data.adminUsers[0] = {
+      ...data.adminUsers[0],
       username: newUsername,
       email: newEmail || data.adminUsers[0]?.email || 'mandaldevanand@gmail.com',
       passwordHash: newPasswordHash,
