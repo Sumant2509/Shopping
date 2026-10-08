@@ -40,6 +40,7 @@ export default function AdminSettingsPage() {
   const [credMsg, setCredMsg] = useState('');
   const [credError, setCredError] = useState('');
   const [updatingCreds, setUpdatingCreds] = useState(false);
+  const [showRazorpaySecret, setShowRazorpaySecret] = useState(false);
 
   // Admin Team list & Create Admin inside Settings
   const [adminsList, setAdminsList] = useState<AdminUserPublic[]>([]);
@@ -423,57 +424,138 @@ export default function AdminSettingsPage() {
             </div>
           </div>
 
-          {/* Online Payment & UPI Gateway Settings */}
-          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-craft-200 shadow-sm space-y-4">
-            <h2 className="font-serif font-bold text-base text-craft-950 pb-2 border-b border-craft-200 flex items-center gap-2">
-              <QrCode className="w-4 h-4 text-terracotta-700" />
-              <span>Online Payment & UPI Gateway Settings</span>
-            </h2>
+          {/* Online Payment & Razorpay Gateway Settings */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-craft-200 shadow-sm space-y-6">
+            <div className="flex items-center justify-between pb-2 border-b border-craft-200">
+              <h2 className="font-serif font-bold text-base text-craft-950 flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-terracotta-700" />
+                <span>Online Payment & Razorpay Gateway Settings</span>
+              </h2>
+              <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                settings.razorpayKeyId && settings.razorpayKeySecret && !settings.razorpayKeyId.includes('demo')
+                  ? 'bg-emerald-100 text-emerald-800'
+                  : 'bg-amber-100 text-amber-900'
+              }`}>
+                {settings.razorpayKeyId && settings.razorpayKeySecret && !settings.razorpayKeyId.includes('demo')
+                  ? '🟢 Live Gateway Active'
+                  : '🟡 Test / Instant UPI Mode'}
+              </span>
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-craft-700 mb-1">
-                  Primary Store UPI ID (for QR Code & Mobile UPI Apps)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. 8878112007@upi"
-                  value={settings.upiId || '8878112007@upi'}
-                  onChange={(e) => setSettings({ ...settings, upiId: e.target.value })}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 font-mono focus:outline-none focus:border-terracotta-600"
-                />
-                <p className="text-[10px] text-craft-500 mt-1">
-                  Customer scan-to-pay dynamic QR codes and intent links pay directly to this UPI address.
-                </p>
+            {/* Direct Bank UPI Section */}
+            <div className="space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-craft-800 flex items-center gap-1.5">
+                <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Direct Bank UPI (Instant 0% Commission Payment)</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-craft-700 mb-1">
+                    Primary Store UPI ID (for QR Code & Mobile UPI Apps)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 8878112007@upi"
+                    value={settings.upiId || '8878112007@upi'}
+                    onChange={(e) => setSettings({ ...settings, upiId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 font-mono focus:outline-none focus:border-terracotta-600"
+                  />
+                  <p className="text-[10px] text-craft-500 mt-1">
+                    Customer scan-to-pay dynamic QR codes and intent links pay directly to this UPI address.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-craft-700 mb-1">
+                    Merchant Display Name (in Google Pay / PhonePe)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Home-Warrior"
+                    value={settings.upiMerchantName || 'Home-Warrior'}
+                    onChange={(e) => setSettings({ ...settings, upiMerchantName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 focus:outline-none focus:border-terracotta-600"
+                  />
+                  <p className="text-[10px] text-craft-500 mt-1">
+                    Business name shown on customer phone when scanning UPI QR code.
+                  </p>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-craft-700 mb-1">
-                  Merchant Display Name (in Google Pay / PhonePe)
+                <label className="flex items-center gap-2 text-xs font-bold text-craft-800 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={settings.enableUpiPayment !== false}
+                    onChange={(e) => setSettings({ ...settings, enableUpiPayment: e.target.checked })}
+                    className="w-4 h-4 rounded text-terracotta-700 focus:ring-terracotta-600"
+                  />
+                  <span>Enable Instant UPI QR & Mobile App Online Checkout</span>
                 </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Home-Warrior"
-                  value={settings.upiMerchantName || 'Home-Warrior'}
-                  onChange={(e) => setSettings({ ...settings, upiMerchantName: e.target.value })}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 focus:outline-none focus:border-terracotta-600"
-                />
-                <p className="text-[10px] text-craft-500 mt-1">
-                  Business name shown on customer phone when scanning UPI QR code.
-                </p>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-craft-100">
-              <label className="flex items-center gap-2 text-xs font-bold text-craft-800 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={settings.enableUpiPayment !== false}
-                  onChange={(e) => setSettings({ ...settings, enableUpiPayment: e.target.checked })}
-                  className="w-4 h-4 rounded text-terracotta-700 focus:ring-terracotta-600"
-                />
-                <span>Enable Instant UPI QR & Mobile App Online Checkout</span>
-              </label>
+            {/* Razorpay Gateway Section */}
+            <div className="pt-4 border-t border-craft-200 space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-craft-800 flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-terracotta-700" />
+                <span>Razorpay Payment Gateway (Cards, Net Banking & Wallets)</span>
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-craft-700 mb-1">
+                    Razorpay Key ID
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="rzp_live_xxxxxxxxxxxx or rzp_test_xxxxxxxxxxxx"
+                    value={settings.razorpayKeyId || ''}
+                    onChange={(e) => setSettings({ ...settings, razorpayKeyId: e.target.value })}
+                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 font-mono focus:outline-none focus:border-terracotta-600"
+                  />
+                  <p className="text-[10px] text-craft-500 mt-1">
+                    Found in Razorpay Dashboard ➔ Settings ➔ API Keys.
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-craft-700 mb-1">
+                    Razorpay Key Secret
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showRazorpaySecret ? 'text' : 'password'}
+                      placeholder="Enter Razorpay Secret Key"
+                      value={settings.razorpayKeySecret || ''}
+                      onChange={(e) => setSettings({ ...settings, razorpayKeySecret: e.target.value })}
+                      className="w-full pr-10 pl-3.5 py-2.5 text-xs rounded-xl border border-craft-300 font-mono focus:outline-none focus:border-terracotta-600"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowRazorpaySecret(!showRazorpaySecret)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-craft-400 hover:text-craft-700"
+                    >
+                      {showRazorpaySecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-craft-500 mt-1">
+                    Secret key generated when creating the API key in Razorpay.
+                  </p>
+                </div>
+              </div>
+
+              {/* 4-Step Quick Instructions */}
+              <div className="bg-craft-50 p-4 rounded-2xl border border-craft-200 text-xs text-craft-700 space-y-1.5">
+                <p className="font-bold text-craft-900">How to get your Razorpay Live Keys:</p>
+                <ol className="list-decimal list-inside space-y-1 text-[11px] text-craft-600">
+                  <li>Visit <a href="https://dashboard.razorpay.com" target="_blank" rel="noreferrer" className="text-terracotta-700 underline font-semibold">dashboard.razorpay.com</a> and complete KYC with PAN & Bank Account.</li>
+                  <li>In the left sidebar, click <strong>Settings</strong> ➔ <strong>API Keys</strong>.</li>
+                  <li>Click <strong>Generate Key</strong> (or Generate Live Key).</li>
+                  <li>Copy the <strong>Key ID</strong> and <strong>Key Secret</strong> and paste them above, then click <strong>Save Store Settings</strong>!</li>
+                </ol>
+              </div>
             </div>
           </div>
 
