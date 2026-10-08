@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Sparkles, Plus, X } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { ImageDropzone } from '@/components/ImageDropzone';
 import { MatShape } from '@/lib/types';
 
 export default function AdminNewProductPage() {
@@ -29,7 +30,7 @@ export default function AdminNewProductPage() {
   const [isNewArrival, setIsNewArrival] = useState(true);
 
   const [colorsInput, setColorsInput] = useState('Marigold & Terracotta, Multi-Color Bloom, Forest Green');
-  const [imagesInput, setImagesInput] = useState('/images/hero_doormat.jpg');
+  const [images, setImages] = useState<string[]>(['/images/hero_doormat.jpg']);
   const [featuresInput, setFeaturesInput] = useState('Diameter: 20 inches / 50.8 cm\nThickness: 0.6 cm / 6 mm\nHandmade by skilled artisans\nWashable');
 
   const handleNameChange = (val: string) => {
@@ -44,7 +45,7 @@ export default function AdminNewProductPage() {
     setLoading(true);
 
     const colors = colorsInput.split(',').map(c => c.trim()).filter(Boolean);
-    const images = imagesInput.split(',').map(img => img.trim()).filter(Boolean);
+    const finalImages = images.length > 0 ? images : ['/images/hero_doormat.jpg'];
     const features = featuresInput.split('\n').map(f => f.trim()).filter(Boolean);
 
     const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
@@ -67,7 +68,7 @@ export default function AdminNewProductPage() {
           washability,
           craftType,
           colors: colors.length > 0 ? colors : ['Standard'],
-          images: images.length > 0 ? images : ['/images/hero_doormat.jpg'],
+          images: finalImages,
           stock: Number(stock),
           sku,
           category,
@@ -288,15 +289,12 @@ export default function AdminNewProductPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-craft-700 mb-1">
-                Image URLs (Comma-separated or /images/hero_doormat.jpg)
-              </label>
-              <input
-                type="text"
-                value={imagesInput}
-                onChange={(e) => setImagesInput(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 focus:outline-none"
+            <div className="pt-2">
+              <ImageDropzone
+                images={images}
+                onChange={setImages}
+                label="Product Images & Gallery (Drag & Drop)"
+                helperText="Drag & drop mat photos here, or click to browse files from your computer. First image will be used as the main cover photo on the shop."
               />
             </div>
 

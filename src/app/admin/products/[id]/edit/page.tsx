@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { ImageDropzone } from '@/components/ImageDropzone';
 import { Product, MatShape } from '@/lib/types';
 
 export default function AdminEditProductPage({ params }: { params: { id: string } }) {
@@ -25,7 +26,7 @@ export default function AdminEditProductPage({ params }: { params: { id: string 
   const [stock, setStock] = useState<number>(30);
   const [sku, setSku] = useState('');
   const [colorsInput, setColorsInput] = useState('');
-  const [imagesInput, setImagesInput] = useState('');
+  const [images, setImages] = useState<string[]>([]);
   const [featuresInput, setFeaturesInput] = useState('');
   const [isBestSeller, setIsBestSeller] = useState(false);
   const [isNewArrival, setIsNewArrival] = useState(false);
@@ -50,7 +51,7 @@ export default function AdminEditProductPage({ params }: { params: { id: string 
           setStock(p.stock);
           setSku(p.sku);
           setColorsInput(p.colors.join(', '));
-          setImagesInput(p.images.join(', '));
+          setImages(Array.isArray(p.images) ? p.images : []);
           setFeaturesInput(p.features.join('\n'));
           setIsBestSeller(Boolean(p.isBestSeller));
           setIsNewArrival(Boolean(p.isNewArrival));
@@ -69,7 +70,7 @@ export default function AdminEditProductPage({ params }: { params: { id: string 
     setSaving(true);
 
     const colors = colorsInput.split(',').map(c => c.trim()).filter(Boolean);
-    const images = imagesInput.split(',').map(img => img.trim()).filter(Boolean);
+    const finalImages = images.length > 0 ? images : ['/images/hero_doormat.jpg'];
     const features = featuresInput.split('\n').map(f => f.trim()).filter(Boolean);
     const discountPercent = mrp > price ? Math.round(((mrp - price) / mrp) * 100) : 0;
 
@@ -92,7 +93,7 @@ export default function AdminEditProductPage({ params }: { params: { id: string 
           stock: Number(stock),
           sku,
           colors,
-          images,
+          images: finalImages,
           features,
           isBestSeller,
           isNewArrival,
@@ -285,13 +286,59 @@ export default function AdminEditProductPage({ params }: { params: { id: string 
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-craft-700 mb-1">Colors (Comma-separated)</label>
+              <label className="block text-xs font-bold text-craft-700 mb-1">
+                Available Color Variations (Comma-separated)
+              </label>
               <input
                 type="text"
+                placeholder="e.g. Marigold & Terracotta, Multi-Color Bloom"
                 value={colorsInput}
                 onChange={(e) => setColorsInput(e.target.value)}
                 className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300"
               />
+            </div>
+
+            <div className="pt-2">
+              <ImageDropzone
+                images={images}
+                onChange={setImages}
+                label="Product Images & Gallery (Drag & Drop)"
+                helperText="Drag & drop mat photos here, or click to browse files from your computer. First image will be used as the main cover photo on the shop."
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-craft-700 mb-1">
+                Key Features (One per line)
+              </label>
+              <textarea
+                rows={3}
+                value={featuresInput}
+                onChange={(e) => setFeaturesInput(e.target.value)}
+                className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 focus:outline-none font-mono text-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-6 pt-2">
+              <label className="flex items-center gap-2 text-xs font-medium text-craft-800 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isBestSeller}
+                  onChange={(e) => setIsBestSeller(e.target.checked)}
+                  className="rounded text-terracotta-700"
+                />
+                <span>Mark as Bestseller</span>
+              </label>
+
+              <label className="flex items-center gap-2 text-xs font-medium text-craft-800 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isNewArrival}
+                  onChange={(e) => setIsNewArrival(e.target.checked)}
+                  className="rounded text-terracotta-700"
+                />
+                <span>Mark as New Arrival</span>
+              </label>
             </div>
           </div>
 
