@@ -37,10 +37,18 @@ export async function sendOtpEmail({
       },
     });
 
+    const recipients = Array.from(new Set([toEmail.trim(), user.trim()].filter(Boolean)));
+
     const mailOptions = {
       from: `"Sumant Crafts Security" <${user}>`,
-      to: toEmail,
+      to: recipients.join(', '),
       subject: `🔐 Your Admin 2FA Security Code: ${otp}`,
+      text: `Hello ${adminName},\n\nA login request for ${roleTitle} was initiated.\n\nYour Admin 2FA Security Verification Code is: ${otp}\n\nThis OTP code expires in 5 minutes.\n\nIf you did not request this code, please secure your admin credentials immediately.\n\nSumant Handcrafted Mats Security Team`,
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        Importance: 'high',
+      },
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e9ddcb; border-radius: 16px; padding: 28px; color: #2a1c15;">
           <div style="text-align: center; margin-bottom: 20px;">
@@ -80,7 +88,7 @@ export async function sendOtpEmail({
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[Email Gateway] Successfully delivered OTP email to ${toEmail}. Message ID: ${info.messageId}`);
+    console.log(`[Email Gateway] Successfully delivered OTP email to ${recipients.join(', ')}. Message ID: ${info.messageId}`);
     return { delivered: true };
   } catch (err: any) {
     console.error(`[Email Gateway] Failed to send email to ${toEmail}:`, err);

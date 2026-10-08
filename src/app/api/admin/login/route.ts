@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyPassword, signAdminToken } from '@/lib/auth';
 import { sendOtpEmail } from '@/lib/email';
+import { sendOtpSms } from '@/lib/sms';
 
 // In-memory Admin OTP store: username -> { otp, channel, expiresAt, adminId }
 const adminOtpStore = new Map<
@@ -56,6 +57,8 @@ export async function POST(request: Request) {
       });
 
       let emailStatus: { delivered: boolean; error?: string } = { delivered: false };
+      let smsStatus: { delivered: boolean; error?: string } = { delivered: false };
+
       if (selectedChannel === 'email') {
         emailStatus = await sendOtpEmail({
           toEmail: admin.email,
@@ -63,18 +66,36 @@ export async function POST(request: Request) {
           otp: generatedOtp,
           roleTitle: admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin',
         });
+      } else {
+        smsStatus = await sendOtpSms({
+          phone: admin.phone,
+          otp: generatedOtp,
+          adminName: admin.name,
+        });
       }
 
-      console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} to ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered})`);
+      const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
+      const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+        `🔐 Sumant Crafts Security: Your Admin 2FA OTP code is: ${generatedOtp}`
+      )}`;
+
+      console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
 
       return NextResponse.json({
         success: true,
         channel: selectedChannel,
-        message: emailStatus.delivered
-          ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your inbox / spam folder.`
-          : `Security OTP sent to ${selectedChannel === 'mobile' ? 'Mobile (' + maskPhone(admin.phone) + ')' : 'Email (' + maskEmail(admin.email) + ')'}`,
+        message: selectedChannel === 'email'
+          ? (emailStatus.delivered
+              ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your Inbox and SPAM folder.`
+              : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
+          : (smsStatus.delivered
+              ? `Real SMS OTP delivered to ${maskPhone(admin.phone)}!`
+              : `Security OTP generated for Mobile (${maskPhone(admin.phone)}).`),
         demoOtp: generatedOtp,
+        whatsappUrl,
         emailDelivered: emailStatus.delivered,
+        smsDelivered: smsStatus.delivered,
         maskedTarget: selectedChannel === 'mobile' ? maskPhone(admin.phone) : maskEmail(admin.email),
       });
     }
@@ -150,6 +171,8 @@ export async function POST(request: Request) {
       });
 
       let emailStatus: { delivered: boolean; error?: string } = { delivered: false };
+      let smsStatus: { delivered: boolean; error?: string } = { delivered: false };
+
       if (selectedChannel === 'email') {
         emailStatus = await sendOtpEmail({
           toEmail: admin.email,
@@ -157,9 +180,21 @@ export async function POST(request: Request) {
           otp: generatedOtp,
           roleTitle: admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin',
         });
+      } else {
+        smsStatus = await sendOtpSms({
+          phone: admin.phone,
+          otp: generatedOtp,
+          adminName: admin.name,
+        });
       }
 
-      console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered})`);
+      const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
+      const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
+        `🔐 Sumant Crafts Security: Your Admin 2FA OTP code is: ${generatedOtp}`
+      )}`;
+
+      console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
 
       return NextResponse.json({
         success: true,
@@ -175,11 +210,17 @@ export async function POST(request: Request) {
           phone: admin.phone,
           email: admin.email,
         },
-        message: emailStatus.delivered
-          ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your inbox / spam folder.`
-          : `Credentials verified. 2FA Security OTP sent to registered ${selectedChannel === 'mobile' ? 'Mobile (' + maskPhone(admin.phone) + ')' : 'Email (' + maskEmail(admin.email) + ')'}`,
+        message: selectedChannel === 'email'
+          ? (emailStatus.delivered
+              ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your Inbox and SPAM folder.`
+              : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
+          : (smsStatus.delivered
+              ? `Real SMS OTP delivered to ${maskPhone(admin.phone)}!`
+              : `Security OTP generated for Mobile (${maskPhone(admin.phone)}).`),
         demoOtp: generatedOtp,
+        whatsappUrl,
         emailDelivered: emailStatus.delivered,
+        smsDelivered: smsStatus.delivered,
       });
     }
 
