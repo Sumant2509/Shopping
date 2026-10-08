@@ -10,7 +10,7 @@ export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
   const [form, setForm] = useState<SiteSettings>({
-    storeName: 'Sumant Crafts',
+    storeName: 'Home-Warrior',
     phone: '+91 8878112007',
     email: 'mandaldevanand@gmail.com',
     whatsappNumber: '+91 8878112007',

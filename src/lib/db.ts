@@ -450,7 +450,7 @@ const INITIAL_DATA: DatabaseSchema = {
     }
   ],
   siteSettings: {
-    storeName: "Sumant Handcrafted Mats",
+    storeName: "Home-Warrior",
     ownerName: "Sumant Kumar",
     tagline: "Beautiful Handmade Doormats for Every Home",
     whatsappNumber: "+91 8878112007",

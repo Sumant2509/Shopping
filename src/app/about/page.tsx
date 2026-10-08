@@ -42,7 +42,7 @@ export default function AboutPage() {
                 Direct From the Maker's Loom
               </h2>
               <p>
-                Sumant Crafts started with a simple belief: everyday home utility products should be durable, beautifully designed, and reasonably priced.
+                Home-Warrior started with a simple belief: everyday home utility products should be durable, beautifully designed, and reasonably priced.
               </p>
               <p>
                 Founded by <strong>Sumant Kumar</strong>, our small manufacturing unit works with local, home-based women weavers and craftspersons. Every single doormat—from our signature 20-inch floral mats to spiral round rugs—is hand-braided, tightly stitched, and finished petal-by-petal.

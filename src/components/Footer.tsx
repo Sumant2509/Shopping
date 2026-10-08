@@ -69,10 +69,10 @@ export function Footer() {
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-terracotta-700 flex items-center justify-center text-white font-serif font-bold text-lg border border-amber-300">
-              SK
+              HW
             </div>
             <div>
-              <span className="font-serif font-bold text-xl text-white">Sumant Crafts</span>
+              <span className="font-serif font-bold text-xl text-white">Home-Warrior</span>
               <p className="text-xs text-amber-400">Handmade Indian Doormats & Mats</p>
             </div>
           </div>
@@ -231,7 +231,7 @@ export function Footer() {
         </div>
 
         <p className="text-xs text-craft-400 text-center md:text-right">
-          © {new Date().getFullYear()} Sumant Crafts • Handcrafted with love by Sumant Kumar in India.
+          © {new Date().getFullYear()} Home-Warrior • Handcrafted with love in India.
         </p>
       </div>
     </footer>

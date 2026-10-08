@@ -57,7 +57,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
             SK
           </div>
           <div>
-            <h1 className="font-bold text-sm leading-none text-white">Sumant Crafts</h1>
+            <h1 className="font-bold text-sm leading-none text-white">Home-Warrior</h1>
             <p className="text-[10px] text-amber-300">Admin Control Center</p>
           </div>
         </div>
@@ -82,7 +82,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
               SK
             </div>
             <div>
-              <h2 className="font-bold text-base text-white tracking-wide">Sumant Crafts</h2>
+              <h2 className="font-bold text-base text-white tracking-wide">Home-Warrior</h2>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span className="text-xs text-amber-300 font-medium">Admin Portal</span>
@@ -147,7 +147,7 @@ export function AdminLayout({ children, title }: AdminLayoutProps) {
         <header className="bg-white border-b border-craft-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-xs">
           <div>
             <h1 className="text-xl font-bold text-craft-900 tracking-tight">{title}</h1>
-            <p className="text-xs text-craft-500">Sumant Crafts Independent Management System</p>
+            <p className="text-xs text-craft-500">Home-Warrior Independent Management System</p>
           </div>
 
           <div className="flex items-center gap-4">

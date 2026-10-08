@@ -60,7 +60,7 @@ export default function AdminLoginPage() {
           SK
         </div>
         <h1 className="font-serif font-bold text-3xl text-white tracking-tight">
-          Sumant Crafts Admin
+          Home-Warrior Admin
         </h1>
         <p className="mt-2 text-craft-400 text-sm">
           Secure Standalone Control Center for Handmade Doormats

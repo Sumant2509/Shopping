@@ -74,10 +74,10 @@ export function AdminSidebar() {
       <div className="p-6 border-b border-craft-900">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-terracotta-700 flex items-center justify-center text-white font-serif font-bold text-lg border border-amber-300">
-            SK
+            HW
           </div>
           <div>
-            <h2 className="font-serif font-bold text-white text-base">Sumant Crafts</h2>
+            <h2 className="font-serif font-bold text-white text-base">Home-Warrior</h2>
             <p className="text-[11px] text-amber-400 font-medium tracking-wider uppercase">Admin Portal</p>
           </div>
         </div>

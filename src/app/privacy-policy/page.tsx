@@ -25,7 +25,7 @@ export default function PrivacyPolicyPage() {
                 1. Information We Collect
               </h2>
               <p>
-                When you purchase from Sumant Crafts or browse our website, we collect necessary customer details such as your name, mobile number, email address, and shipping address to fulfill orders and provide tracking updates.
+                When you purchase from Home-Warrior or browse our website, we collect necessary customer details such as your name, mobile number, email address, and shipping address to fulfill orders and provide tracking updates.
               </p>
             </section>
 

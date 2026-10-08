@@ -216,7 +216,7 @@ const INITIAL_COUPONS: Coupon[] = [
 ];
 
 const INITIAL_SETTINGS: SiteSettings = {
-  storeName: 'Sumant Crafts',
+  storeName: 'Home-Warrior',
   phone: '+91 8878112007',
   email: 'mandaldevanand@gmail.com',
   whatsappNumber: '+91 8878112007',

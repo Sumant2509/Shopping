@@ -40,10 +40,10 @@ export async function sendOtpEmail({
     const recipients = Array.from(new Set([toEmail.trim(), user.trim()].filter(Boolean)));
 
     const mailOptions = {
-      from: `"Sumant Crafts Security" <${user}>`,
+      from: `"Home-Warrior Security" <${user}>`,
       to: recipients.join(', '),
-      subject: `🔐 Your Admin 2FA Security Code: ${otp}`,
-      text: `Hello ${adminName},\n\nA login request for ${roleTitle} was initiated.\n\nYour Admin 2FA Security Verification Code is: ${otp}\n\nThis OTP code expires in 5 minutes.\n\nIf you did not request this code, please secure your admin credentials immediately.\n\nSumant Handcrafted Mats Security Team`,
+      subject: `🔐 Home-Warrior Admin 2FA Code: ${otp}`,
+      text: `Hello ${adminName},\n\nA login request for ${roleTitle} was initiated.\n\nYour Admin 2FA Security Verification Code is: ${otp}\n\nThis OTP code expires in 5 minutes.\n\nIf you did not request this code, please secure your admin credentials immediately.\n\nHome-Warrior Security Team`,
       headers: {
         'X-Priority': '1',
         'X-MSMail-Priority': 'High',
@@ -53,9 +53,9 @@ export async function sendOtpEmail({
         <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e9ddcb; border-radius: 16px; padding: 28px; color: #2a1c15;">
           <div style="text-align: center; margin-bottom: 20px;">
             <div style="display: inline-block; width: 48px; height: 48px; line-height: 48px; background: #9e381f; color: #fff; border-radius: 12px; font-size: 20px; font-weight: bold;">
-              SK
+              HW
             </div>
-            <h2 style="color: #1d120c; margin: 12px 0 4px; font-size: 22px;">Sumant Handcrafted Mats</h2>
+            <h2 style="color: #1d120c; margin: 12px 0 4px; font-size: 22px;">Home-Warrior</h2>
             <p style="margin: 0; color: #7f573c; font-size: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
               Admin 2-Factor Authentication
             </p>

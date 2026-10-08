@@ -83,7 +83,7 @@ export async function sendOtpSms({
       const body = new URLSearchParams({
         To: phone.startsWith('+') ? phone : `+91${rawNumber}`,
         From: twilioFrom,
-        Body: `Sumant Crafts Security: Your Admin 2FA OTP code is ${otp}. Valid for 5 minutes.`,
+        Body: `Home-Warrior Security: Your Admin 2FA OTP code is ${otp}. Valid for 5 minutes.`,
       });
 
       const res = await fetch(

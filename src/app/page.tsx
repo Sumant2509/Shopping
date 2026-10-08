@@ -441,7 +441,7 @@ export default function HomePage() {
             <div className="text-center max-w-2xl mx-auto mb-14">
               <span className="text-xs font-bold text-terracotta-700 uppercase tracking-wider">Our Promise</span>
               <h2 className="font-serif font-bold text-2xl sm:text-3xl text-craft-950 mt-1">
-                Why Buy Directly from Sumant Crafts?
+                Why Buy Directly from Home-Warrior?
               </h2>
               <p className="text-sm text-craft-600 mt-1">
                 Honest Indian craftsmanship, direct manufacturing, and customer-first care.

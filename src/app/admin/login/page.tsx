@@ -239,10 +239,10 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-[#1d120c] flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-craft-200">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <div className="w-14 h-14 rounded-2xl bg-terracotta-700 text-white font-serif font-bold text-2xl flex items-center justify-center mx-auto border-2 border-amber-300 shadow-lg mb-4">
-          SK
+          HW
         </div>
         <h2 className="font-serif font-bold text-2xl sm:text-3xl text-white tracking-tight">
-          Sumant Crafts Admin
+          Home-Warrior Admin
         </h2>
         <p className="mt-1 text-xs text-amber-300 font-medium uppercase tracking-wider">
           {step === 'password'

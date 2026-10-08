@@ -21,24 +21,24 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sumanthandmade.in"),
-  title: "Sumant Crafts | Beautiful Handmade Doormats for Every Home",
-  description: "Handcrafted flower-shaped, round, and braided cotton doormats manufactured by Sumant Kumar in India. Direct from maker with free all-India shipping on orders above ₹699.",
+  title: "Home-Warrior | Beautiful Handmade Doormats for Every Home",
+  description: "Handcrafted flower-shaped, round, and braided cotton doormats manufactured by Home-Warrior in India. Direct from maker with free all-India shipping on orders above ₹699.",
   keywords: [
     "handmade doormat",
     "flower shaped doormat",
     "braided cotton mat",
     "crochet doormat India",
-    "Sumant Kumar doormats",
+    "Home-Warrior doormats",
     "washable doormat",
     "Indian handmade home decor",
     "entryway mat India"
   ],
-  authors: [{ name: "Sumant Kumar" }],
+  authors: [{ name: "Home-Warrior" }],
   openGraph: {
-    title: "Sumant Crafts | Handcrafted Doormats Made in India",
+    title: "Home-Warrior | Handcrafted Doormats Made in India",
     description: "Explore our bestselling 20-inch handmade flower doormats and braided floor mats. Direct from maker, authentic Indian craftsmanship.",
     url: "https://sumanthandmade.in",
-    siteName: "Sumant Handcrafted Mats",
+    siteName: "Home-Warrior",
     images: [
       {
         url: "/images/hero_doormat.jpg",
@@ -52,8 +52,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Sumant Crafts | Beautiful Handmade Doormats",
-    description: "Handcrafted flower and braided doormats by Sumant Kumar.",
+    title: "Home-Warrior | Beautiful Handmade Doormats",
+    description: "Handcrafted flower and braided doormats by Home-Warrior.",
     images: ["/images/hero_doormat.jpg"],
   },
   robots: {
@@ -70,7 +70,7 @@ export default function RootLayout({
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "Organization",
-    "name": "Sumant Handcrafted Mats",
+    "name": "Home-Warrior",
     "founder": "Sumant Kumar",
     "url": "https://sumanthandmade.in",
     "logo": "https://sumanthandmade.in/images/hero_doormat.jpg",

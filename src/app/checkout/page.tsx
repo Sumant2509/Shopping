@@ -249,7 +249,7 @@ export default function CheckoutPage() {
         key: initData.keyId,
         amount: initData.amount,
         currency: initData.currency || 'INR',
-        name: 'Sumant Crafts',
+        name: 'Home-Warrior',
         description: 'Handmade Doormats Order',
         image: '/images/hero_doormat.jpg',
         order_id: initData.orderId,

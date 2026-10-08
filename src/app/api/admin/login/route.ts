@@ -76,9 +76,8 @@ export async function POST(request: Request) {
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
       const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const roleLabel = admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin';
       const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-        `🔐 *Sumant Crafts Admin Security 2FA*\n\nHello *${admin.name}* (${roleLabel}),\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
+        `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
       )}`;
 
       console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
@@ -188,9 +187,8 @@ export async function POST(request: Request) {
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
       const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const roleLabel = admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin';
       const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-        `🔐 *Sumant Crafts Admin Security 2FA*\n\nHello *${admin.name}* (${roleLabel}),\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
+        `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
       )}`;
 
       console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);

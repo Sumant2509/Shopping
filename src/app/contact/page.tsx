@@ -38,7 +38,7 @@ export default function ContactPage() {
             Customer Support & Inquiries
           </span>
           <h1 className="font-serif font-bold text-3xl sm:text-4xl text-craft-950 mt-1">
-            Get in Touch with Sumant Crafts
+            Get in Touch with Home-Warrior
           </h1>
           <p className="text-xs sm:text-sm text-craft-600 mt-2">
             We are always happy to help with order tracking, custom shapes, bulk orders, or product queries.

@@ -50,7 +50,7 @@ export default function CustomerRegisterPage() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8">
         <Link href="/" className="inline-flex items-center gap-2 mb-6 text-craft-600 hover:text-terracotta-700 transition-colors text-sm">
           <Store className="w-4 h-4" />
-          <span>Sumant Crafts</span>
+          <span>Home-Warrior</span>
         </Link>
         <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-terracotta-500 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg">
           <ShoppingBag className="w-8 h-8 text-white" />

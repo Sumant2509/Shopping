@@ -191,7 +191,7 @@ export default function ProductDetailPage({ params }: { params: { slug: string }
     "sku": product.sku,
     "brand": {
       "@type": "Brand",
-      "name": "Sumant Crafts"
+      "name": "Home-Warrior"
     },
     "offers": {
       "@type": "Offer",

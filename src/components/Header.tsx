@@ -92,11 +92,11 @@ export function Header() {
           <div className="flex-1 lg:flex-none flex items-center justify-center lg:justify-start">
             <Link href="/" className="group flex items-center gap-3">
               <div className="w-11 h-11 rounded-full bg-gradient-to-br from-terracotta-600 to-terracotta-800 flex items-center justify-center text-white shadow-warm border-2 border-amber-300">
-                <span className="font-serif font-bold text-xl tracking-tighter">SK</span>
+                <span className="font-serif font-bold text-xl tracking-tighter">HW</span>
               </div>
               <div className="flex flex-col">
                 <span className="font-serif font-bold text-xl sm:text-2xl text-craft-900 tracking-tight leading-none group-hover:text-terracotta-700 transition-colors">
-                  Sumant Crafts
+                  Home-Warrior
                 </span>
                 <span className="text-[11px] font-medium tracking-wider uppercase text-terracotta-700 mt-1">
                   Handmade Indian Doormats

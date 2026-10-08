@@ -36,7 +36,7 @@ export default function CustomerOrdersPage() {
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 text-craft-800 font-serif font-bold text-lg">
             <Home className="w-5 h-5 text-terracotta-600" />
-            Sumant Crafts
+            Home-Warrior
           </Link>
           <Link href="/account/profile" className="flex items-center gap-1.5 text-sm text-craft-600 hover:text-terracotta-700 font-medium">
             <User className="w-4 h-4" /> {customer?.name || 'Profile'}
