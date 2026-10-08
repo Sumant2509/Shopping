@@ -12,8 +12,9 @@ export async function PUT(request: Request) {
   const cookieStore = cookies();
   const token = cookieStore.get('admin_token')?.value;
 
-  if (!token || !(await verifyAdminToken(token))) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const session = token ? await verifyAdminToken(token) : null;
+  if (!session || session.role !== 'superadmin') {
+    return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
   }
 
   try {

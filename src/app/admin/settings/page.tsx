@@ -53,10 +53,30 @@ export default function AdminSettingsPage() {
   const [createSuccess, setCreateSuccess] = useState('');
   const [createError, setCreateError] = useState('');
 
+  const [currentUser, setCurrentUser] = useState<{ role: string; name: string } | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
+
   useEffect(() => {
-    loadSettings();
-    loadAdminCreds();
-    loadAdminsList();
+    fetch('/api/admin/me')
+      .then(r => r.json())
+      .then(d => {
+        if (d.admin) {
+          setCurrentUser(d.admin);
+          if (d.admin.role !== 'superadmin') {
+            setAccessDenied(true);
+            setLoading(false);
+            return;
+          }
+        }
+        loadSettings();
+        loadAdminCreds();
+        loadAdminsList();
+      })
+      .catch(() => {
+        loadSettings();
+        loadAdminCreds();
+        loadAdminsList();
+      });
   }, []);
 
   const loadAdminCreds = async () => {
@@ -192,6 +212,33 @@ export default function AdminSettingsPage() {
       setSaving(false);
     }
   };
+
+  if (accessDenied) {
+    return (
+      <div className="min-h-screen flex bg-craft-100/50">
+        <AdminSidebar />
+        <main className="flex-1 p-6 sm:p-10 flex items-center justify-center">
+          <div className="max-w-md w-full bg-white rounded-3xl p-8 border border-craft-200 shadow-xl text-center space-y-4">
+            <div className="w-16 h-16 rounded-2xl bg-amber-100 text-amber-800 mx-auto flex items-center justify-center">
+              <Lock className="w-8 h-8" />
+            </div>
+            <h2 className="font-serif font-bold text-2xl text-craft-950">Super Admin Access Only</h2>
+            <p className="text-xs text-craft-600 leading-relaxed">
+              Store Settings, credentials, and 2FA configurations are strictly restricted to the primary <strong>Super Admin</strong> account. Store Managers and Support Team members do not have permission to view or edit this panel.
+            </p>
+            <div className="pt-2">
+              <Link
+                href="/admin/dashboard"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-terracotta-700 hover:bg-terracotta-800 text-white font-bold text-xs transition-colors shadow-warm"
+              >
+                Return to Dashboard
+              </Link>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   if (loading || !settings) {
     return (

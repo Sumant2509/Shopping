@@ -1,6 +1,52 @@
 {
   "products": [
     {
+      "name": "Handmade Doormat",
+      "slug": "flower",
+      "description": "washable",
+      "price": 449,
+      "mrp": 799,
+      "discountPercent": 44,
+      "shape": "flower",
+      "dimensions": "Diameter: 20 inches / 50.8 cm",
+      "thickness": "0.6 cm / 6 mm",
+      "material": "Handmade Braided Cotton & Textile Blend",
+      "washability": "Hand Washable & Gentle Machine Washable",
+      "craftType": "Handcrafted Braided & Stitched Textile",
+      "colors": [
+        "Marigold & Terracotta",
+        "Multi-Color Bloom",
+        "Forest Green"
+      ],
+      "images": [
+        "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
+        "/uploads/mat-Screenshot_2026-09-18_172755-1791488671652-lxdbt.png",
+        "/uploads/mat-Screenshot_2026-09-18_172709-1791488703548-fnknt.png"
+      ],
+      "stock": 30,
+      "sku": "SKM-44301",
+      "category": "Floral Mats",
+      "rating": 5,
+      "reviewCount": 0,
+      "isBestSeller": false,
+      "isNewArrival": true,
+      "inStock": true,
+      "tags": [
+        "flower",
+        "handmade",
+        "doormat",
+        "washable"
+      ],
+      "features": [
+        "Diameter: 20 inches / 50.8 cm",
+        "Thickness: 0.6 cm / 6 mm",
+        "Handmade by skilled artisans",
+        "Washable"
+      ],
+      "id": "prod-1791488808964-q0fg",
+      "createdAt": "2026-10-08T19:46:48.964Z"
+    },
+    {
       "id": "prod-starburst-01",
       "name": "Handmade Multi-Color Starburst Wheel Doormat",
       "slug": "handmade-starburst-wheel-doormat",
@@ -48,143 +94,6 @@
         "Durable heavy-duty braided construction"
       ],
       "createdAt": "2026-10-01T10:00:00.000Z"
-    },
-    {
-      "id": "prod-oval-03",
-      "name": "Handmade Oval Braided Entryway Mat",
-      "slug": "handmade-oval-braided-mat",
-      "description": "Spacious oval profile tailored for wider main doors, passage hallways, and kitchen counters. Hand-braided with contrasting border tones.",
-      "price": 499,
-      "mrp": 899,
-      "discountPercent": 44,
-      "shape": "oval",
-      "dimensions": "24 x 16 inches / 60.9 x 40.6 cm",
-      "thickness": "0.6 cm / 6 mm",
-      "material": "Handmade Cotton & Jute Blend",
-      "washability": "Hand Washable",
-      "craftType": "Hand-braided Oval Stitching",
-      "colors": [
-        "Sunset Terracotta",
-        "Olive Green & Cream",
-        "Natural Jute & Mustard"
-      ],
-      "images": [
-        "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=900&q=80",
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80"
-      ],
-      "stock": 22,
-      "sku": "SKM-OVL-24-03",
-      "category": "Oval Mats",
-      "rating": 4.7,
-      "reviewCount": 19,
-      "isBestSeller": false,
-      "isNewArrival": true,
-      "inStock": true,
-      "tags": [
-        "oval",
-        "entryway",
-        "handmade",
-        "hallway"
-      ],
-      "features": [
-        "Dimensions: 24 x 16 inches",
-        "Thickness: 0.6 cm / 6 mm",
-        "Handmade braided finish",
-        "Easy hand wash care",
-        "Comfortable foot feel"
-      ],
-      "createdAt": "2026-09-20T10:00:00.000Z"
-    },
-    {
-      "id": "prod-rect-04",
-      "name": "Classic Rectangular Woven Doorstep Mat",
-      "slug": "classic-rectangular-woven-doormat",
-      "description": "Traditional rectangular geometry with dense hand-woven textured ribs. Ideal for main doors, apartment entrances, and office cabins.",
-      "price": 349,
-      "mrp": 599,
-      "discountPercent": 42,
-      "shape": "rectangle",
-      "dimensions": "24 x 16 inches / 60 x 40 cm",
-      "thickness": "0.7 cm / 7 mm",
-      "material": "Textured Cotton Textile",
-      "washability": "Hand Wash & Machine Washable",
-      "craftType": "Handloom Woven Weft",
-      "colors": [
-        "Charcoal Grey",
-        "Brick Red & Beige",
-        "Classic Navy"
-      ],
-      "images": [
-        "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=900&q=80"
-      ],
-      "stock": 50,
-      "sku": "SKM-RCT-24-04",
-      "category": "Rectangular Mats",
-      "rating": 4.8,
-      "reviewCount": 31,
-      "isBestSeller": true,
-      "isNewArrival": false,
-      "inStock": true,
-      "tags": [
-        "rectangle",
-        "doorstep",
-        "classic",
-        "woven"
-      ],
-      "features": [
-        "Dimensions: 24 x 16 inches",
-        "Thickness: 0.7 cm / 7 mm",
-        "Hand-woven construction",
-        "Machine and hand washable",
-        "Fits standard Indian doorway widths"
-      ],
-      "createdAt": "2026-09-05T10:00:00.000Z"
-    },
-    {
-      "id": "prod-lotus-05",
-      "name": "Handcrafted Lotus Bloom Accent Mat",
-      "slug": "handcrafted-lotus-bloom-accent-mat",
-      "description": "Artistic lotus petal silhouette crafted with delicate braided cotton cords. Adds an auspicious and elegant traditional touch to home entrances and mandir spaces.",
-      "price": 479,
-      "mrp": 849,
-      "discountPercent": 44,
-      "shape": "flower",
-      "dimensions": "Diameter: 20 inches / 50.8 cm",
-      "thickness": "0.6 cm / 6 mm",
-      "material": "Hand-braided Cotton Thread",
-      "washability": "Hand Washable with Mild Detergent",
-      "craftType": "Handcrafted Petal Stitching",
-      "colors": [
-        "Lotus Pink & Cream",
-        "Haldi Yellow & Green",
-        "Pure Crimson"
-      ],
-      "images": [
-        "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?auto=format&fit=crop&w=900&q=80",
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80"
-      ],
-      "stock": 18,
-      "sku": "SKM-LTS-20-05",
-      "category": "Floral Mats",
-      "rating": 4.9,
-      "reviewCount": 15,
-      "isBestSeller": false,
-      "isNewArrival": true,
-      "inStock": true,
-      "tags": [
-        "lotus",
-        "flower",
-        "pooja room",
-        "festive"
-      ],
-      "features": [
-        "Diameter: 20 inches / 50.8 cm",
-        "Thickness: 0.6 cm / 6 mm",
-        "Handmade lotus petal shape",
-        "Washable fabric",
-        "Ideal for festival decor and daily entrance use"
-      ],
-      "createdAt": "2026-09-25T10:00:00.000Z"
     }
   ],
   "orders": [
@@ -516,7 +425,7 @@
       "email": "operations@sumantcrafts.in",
       "phone": "+91 9876543210",
       "role": "manager",
-      "passwordHash": "$2a$10$8/Wde.ZAr/XbkWJQE0fxgOnw3YrNs9nF2PNQTc1KiJIGmbDFOnjEa",
+      "passwordHash": "$2a$10$jHB0bDRTxVh/0.rAOrF2Z.OIIUW5O7S/9MnD9OPi6QCQbsxwybYYq",
       "isActive": true,
       "mobileVerified": true,
       "emailVerified": true,
@@ -529,7 +438,7 @@
       "email": "support@sumantcrafts.in",
       "phone": "+91 9826012345",
       "role": "support",
-      "passwordHash": "$2a$10$VENZtM45ryroki8HzM8Mb.gg0D69ckjQq4oYyaJHlxWSfN3uaGrJO",
+      "passwordHash": "$2a$10$e5fQA8JMjeIVb3b9ZZ0ce.WDxQ4qygbrOll74qssVmlE1tIQhcK66",
       "isActive": true,
       "mobileVerified": true,
       "emailVerified": true,

@@ -22,8 +22,9 @@ function sanitizeAdmin(admin: any) {
 export async function GET(request: Request) {
   try {
     const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
-    if (!adminToken || !(await verifyAdminToken(adminToken))) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    const session = adminToken ? await verifyAdminToken(adminToken) : null;
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
     const admins = db.getAdminUsers();
@@ -41,8 +42,8 @@ export async function POST(request: Request) {
   try {
     const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
     const session = adminToken ? await verifyAdminToken(adminToken) : null;
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -96,8 +97,8 @@ export async function PUT(request: Request) {
   try {
     const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
     const session = adminToken ? await verifyAdminToken(adminToken) : null;
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
     const body = await request.json();
@@ -138,8 +139,8 @@ export async function DELETE(request: Request) {
   try {
     const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
     const session = adminToken ? await verifyAdminToken(adminToken) : null;
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized access' }, { status: 401 });
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
     const { searchParams } = new URL(request.url);

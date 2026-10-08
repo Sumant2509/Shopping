@@ -32,18 +32,6 @@ export function AdminSidebar() {
     }
   };
 
-  const navItems = [
-    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
-    { name: 'All Products', href: '/admin/products', icon: Package },
-    { name: 'Add Product', href: '/admin/products/new', icon: PlusCircle },
-    { name: 'Orders & Shipping', href: '/admin/orders', icon: ShoppingBag },
-    { name: 'Customers', href: '/admin/customers', icon: Users },
-    { name: 'Discount Coupons', href: '/admin/coupons', icon: Tag },
-    { name: 'Reviews Moderation', href: '/admin/reviews', icon: Star },
-    { name: 'Admin Team & 2FA', href: '/admin/team', icon: ShieldCheck },
-    { name: 'Store Settings', href: '/admin/settings', icon: Settings },
-  ];
-
   const [currentUser, setCurrentUser] = React.useState<{ name: string; username: string; role: string } | null>(null);
 
   React.useEffect(() => {
@@ -62,14 +50,39 @@ export function AdminSidebar() {
   };
 
   const getInitials = (name?: string) => {
-    if (!name) return 'SK';
+    if (!name) return 'HW';
     const parts = name.trim().split(' ');
     if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
     return name.slice(0, 2).toUpperCase();
   };
 
+  // Role-based navigation items
+  const operationalItems = [
+    { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
+    ...(currentUser?.role !== 'support'
+      ? [
+          { name: 'All Products', href: '/admin/products', icon: Package },
+          { name: 'Add Product', href: '/admin/products/new', icon: PlusCircle },
+        ]
+      : []),
+    { name: 'Orders & Shipping', href: '/admin/orders', icon: ShoppingBag },
+    { name: 'Customers', href: '/admin/customers', icon: Users },
+    ...(currentUser?.role !== 'support'
+      ? [{ name: 'Discount Coupons', href: '/admin/coupons', icon: Tag }]
+      : []),
+    { name: 'Reviews Moderation', href: '/admin/reviews', icon: Star },
+  ];
+
+  // Super Admin Exclusive items: ONLY for superadmin
+  const superAdminOnlyItems = [
+    { name: 'Admin Team & 2FA', href: '/admin/team', icon: ShieldCheck },
+    { name: 'Store Settings', href: '/admin/settings', icon: Settings },
+  ];
+
+  const isSuperAdmin = !currentUser || currentUser.role === 'superadmin';
+
   return (
-    <aside className="w-64 bg-craft-950 text-craft-200 min-h-screen flex flex-col border-r border-craft-900 shrink-0">
+    <aside className="w-64 bg-craft-950 text-craft-200 min-h-screen h-screen sticky top-0 flex flex-col border-r border-craft-900 shrink-0 select-none z-30">
       {/* Brand Header */}
       <div className="p-6 border-b border-craft-900">
         <div className="flex items-center gap-3">
@@ -78,14 +91,20 @@ export function AdminSidebar() {
           </div>
           <div>
             <h2 className="font-serif font-bold text-white text-base">Home-Warrior</h2>
-            <p className="text-[11px] text-amber-400 font-medium tracking-wider uppercase">Admin Portal</p>
+            <p className="text-[11px] text-amber-400 font-medium tracking-wider uppercase">
+              {currentUser?.role === 'manager'
+                ? 'Manager Portal'
+                : currentUser?.role === 'support'
+                ? 'Support Portal'
+                : 'Super Admin Portal'}
+            </p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
-        {navItems.map((item) => {
+        {operationalItems.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.href) && item.href !== '/admin/products');
           return (
@@ -103,6 +122,33 @@ export function AdminSidebar() {
             </Link>
           );
         })}
+
+        {/* Super Admin Exclusive Panel (Only visible to Super Admin) */}
+        {isSuperAdmin && (
+          <div className="pt-4 mt-2 border-t border-craft-900">
+            <p className="px-3.5 pb-2 text-[10px] font-bold uppercase tracking-wider text-amber-400/80">
+              Super Admin Only
+            </p>
+            {superAdminOnlyItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href || pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.name}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-terracotta-700 text-white shadow-sm'
+                      : 'text-craft-400 hover:text-white hover:bg-craft-900'
+                  }`}
+                >
+                  <Icon className={`w-4 h-4 ${isActive ? 'text-amber-300' : 'text-craft-400'}`} />
+                  <span>{item.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+        )}
       </nav>
 
       {/* Bottom Actions & User Profile */}

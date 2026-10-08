@@ -5,8 +5,9 @@ import { hashPassword, verifyPassword, verifyAdminToken } from '@/lib/auth';
 export async function GET(request: Request) {
   try {
     const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
-    if (!adminToken || !(await verifyAdminToken(adminToken))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = adminToken ? await verifyAdminToken(adminToken) : null;
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
     const admin = db.getAdminUser('admin') || db.getAdminUser('mandaldevanand@gmail.com');
@@ -22,8 +23,9 @@ export async function GET(request: Request) {
 export async function PUT(request: Request) {
   try {
     const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
-    if (!adminToken || !(await verifyAdminToken(adminToken))) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const session = adminToken ? await verifyAdminToken(adminToken) : null;
+    if (!session || session.role !== 'superadmin') {
+      return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
     const { currentPassword, newUsername, newPassword, newEmail } = await request.json();
