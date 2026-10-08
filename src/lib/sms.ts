@@ -12,9 +12,40 @@ export async function sendOtpSms({
   const cleanPhone = phone.replace(/[^0-9]/g, ''); // e.g. 918878112007 or 8878112007
   const rawNumber = cleanPhone.length === 12 && cleanPhone.startsWith('91') ? cleanPhone.slice(2) : cleanPhone;
 
-  // 1. FAST2SMS Integration (Fastest & Free for India +91 numbers)
+  // 1. FAST2SMS Integration (Smart OTP & Bulk OTP for India +91 numbers)
   const fast2SmsKey = process.env.FAST2SMS_API_KEY;
+  const fast2SmsOtpId = process.env.FAST2SMS_OTP_ID;
+
   if (fast2SmsKey) {
+    // 1A. Fast2SMS Smart OTP (SMS + WhatsApp Fallback)
+    if (fast2SmsOtpId) {
+      try {
+        const res = await fetch('https://www.fast2sms.com/dev/otp/send', {
+          method: 'POST',
+          headers: {
+            Authorization: fast2SmsKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            mobile: rawNumber,
+            otp_id: fast2SmsOtpId,
+            otp: otp,
+            variables_values: otp,
+          }),
+        });
+        const data = await res.json();
+        if (data.return) {
+          console.log(`[SMS Gateway - Smart OTP] Real OTP delivered to ${rawNumber}`);
+          return { delivered: true, provider: 'Fast2SMS Smart OTP' };
+        } else {
+          console.warn(`[SMS Gateway - Smart OTP] Failed to send Smart OTP:`, data);
+        }
+      } catch (err: any) {
+        console.error(`[SMS Gateway - Smart OTP] Error:`, err);
+      }
+    }
+
+    // 1B. Fast2SMS Standard OTP Route fallback
     try {
       const res = await fetch('https://www.fast2sms.com/dev/bulkV2', {
         method: 'POST',
@@ -33,8 +64,8 @@ export async function sendOtpSms({
         console.log(`[SMS Gateway - Fast2SMS] Real SMS OTP delivered to ${rawNumber}`);
         return { delivered: true, provider: 'Fast2SMS' };
       } else {
-        console.warn(`[SMS Gateway - Fast2SMS] Failed to send SMS:`, data);
-        return { delivered: false, error: data.message || 'Fast2SMS failed' };
+        console.warn(`[SMS Gateway - Fast2SMS] Fast2SMS standard route notice:`, data);
+        return { delivered: false, error: data.message || 'Fast2SMS dispatch pending' };
       }
     } catch (err: any) {
       console.error(`[SMS Gateway - Fast2SMS] Error:`, err);
