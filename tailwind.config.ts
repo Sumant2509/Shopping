@@ -20,6 +20,7 @@ const config: Config = {
           700: "#7f573c",
           800: "#684734",
           900: "#553a2d",
+          950: "#1d120c",
         },
         terracotta: {
           50: "#fdf4f0",
