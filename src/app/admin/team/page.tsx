@@ -199,7 +199,7 @@ export default function AdminTeamPage() {
 
       const data = await res.json();
       if (data.success) {
-        setTestOtpResult(`Security 2FA OTP Code: ${data.demoOtp || '887811'} (Sent to ${ch === 'mobile' ? admin.phone : admin.email})`);
+        setTestOtpResult(`✅ 2FA Security OTP dispatched successfully to ${ch === 'mobile' ? admin.phone : admin.email}! Please check your ${ch === 'mobile' ? 'Mobile SMS / WhatsApp' : 'Inbox / Spam folder'}.`);
       } else {
         setTestOtpResult(`Failed to dispatch test OTP: ${data.error}`);
       }

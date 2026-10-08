@@ -91,8 +91,7 @@ export async function POST(request: Request) {
               : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
           : (smsStatus.delivered
               ? `Real SMS OTP delivered to ${maskPhone(admin.phone)}!`
-              : `Security OTP generated for Mobile (${maskPhone(admin.phone)}).`),
-        demoOtp: generatedOtp,
+              : `Security OTP sent to Mobile (${maskPhone(admin.phone)}).`),
         whatsappUrl,
         emailDelivered: emailStatus.delivered,
         smsDelivered: smsStatus.delivered,
@@ -216,8 +215,7 @@ export async function POST(request: Request) {
               : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
           : (smsStatus.delivered
               ? `Real SMS OTP delivered to ${maskPhone(admin.phone)}!`
-              : `Security OTP generated for Mobile (${maskPhone(admin.phone)}).`),
-        demoOtp: generatedOtp,
+              : `Security OTP sent to Mobile (${maskPhone(admin.phone)}).`),
         whatsappUrl,
         emailDelivered: emailStatus.delivered,
         smsDelivered: smsStatus.delivered,

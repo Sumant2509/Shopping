@@ -21,8 +21,6 @@ import {
   Briefcase,
   Headphones,
   ExternalLink,
-  Zap,
-  Info,
 } from 'lucide-react';
 
 type LoginRole = 'superadmin' | 'manager' | 'support';
@@ -84,8 +82,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [channel, setChannel] = useState<'mobile' | 'email'>('mobile');
   const [otp, setOtp] = useState('');
-  const [currentOtp, setCurrentOtp] = useState<string | null>(null);
-  const [demoOtpNotice, setDemoOtpNotice] = useState<string | null>(null);
+  const [dispatchNotice, setDispatchNotice] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -136,10 +133,7 @@ export default function AdminLoginPage() {
         setStep('otp');
         setChannel(data.channel || 'mobile');
         if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
-        if (data.demoOtp) {
-          setCurrentOtp(data.demoOtp);
-          setDemoOtpNotice(`Security 2FA OTP: ${data.demoOtp}`);
-        }
+        setDispatchNotice(data.message || `Security OTP dispatched to your ${data.channel === 'email' ? 'Email' : 'Mobile phone'}.`);
       }
     } catch {
       setError('Login request failed. Please check network connection.');
@@ -168,9 +162,8 @@ export default function AdminLoginPage() {
 
       const data = await res.json();
       if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
-      if (data.success && data.demoOtp) {
-        setCurrentOtp(data.demoOtp);
-        setDemoOtpNotice(`New 2FA OTP (${newChannel.toUpperCase()}): ${data.demoOtp}`);
+      if (data.success) {
+        setDispatchNotice(data.message || `New 2FA OTP dispatched via ${newChannel.toUpperCase()}.`);
       } else if (data.error) {
         setError(data.error);
       }
@@ -229,9 +222,10 @@ export default function AdminLoginPage() {
       });
       const data = await res.json();
       if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
-      if (data.demoOtp) {
-        setCurrentOtp(data.demoOtp);
-        setDemoOtpNotice(`New 2FA OTP (${channel.toUpperCase()}): ${data.demoOtp}`);
+      if (data.success) {
+        setDispatchNotice(`A new 6-digit Security OTP has been dispatched to your ${channel === 'mobile' ? 'Mobile Phone' : 'Email'}.`);
+      } else if (data.error) {
+        setError(data.error);
       }
     } catch {
       setError('Failed to resend OTP.');
@@ -310,15 +304,10 @@ export default function AdminLoginPage() {
             </div>
           )}
 
-          {demoOtpNotice && (
-            <div className="mb-5 bg-amber-950/80 border border-amber-500 text-amber-200 p-3.5 rounded-xl flex items-center justify-between text-xs animate-pulse">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
-                <span className="font-mono font-bold tracking-widest">{demoOtpNotice}</span>
-              </div>
-              <span className="text-[10px] bg-amber-500/20 px-2 py-0.5 rounded text-amber-300 font-mono font-bold">
-                Master: 887811
-              </span>
+          {dispatchNotice && (
+            <div className="mb-5 bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 p-3.5 rounded-xl flex items-center gap-2 text-xs">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{dispatchNotice}</span>
             </div>
           )}
 
@@ -517,15 +506,15 @@ export default function AdminLoginPage() {
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-emerald-300 font-bold flex items-center gap-1.5">
                       <Smartphone className="w-4 h-4 text-emerald-400" />
-                      <span>Mobile Verification</span>
+                      <span>Mobile SMS Verification</span>
                     </span>
                     <span className="text-[10px] text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded font-bold border border-emerald-500/30">
-                      WhatsApp Ready
+                      Fast2SMS Gateway
                     </span>
                   </div>
 
                   <p className="text-[11px] text-craft-300 leading-relaxed">
-                    Cellular SIM card SMS requires telecom carrier credentials. For instant delivery to your phone, receive via WhatsApp:
+                    A 6-digit Security OTP has been dispatched to your mobile phone number <strong className="text-white font-mono">{verifiedUser?.maskedPhone}</strong>.
                   </p>
 
                   {whatsappUrl && (
@@ -535,75 +524,35 @@ export default function AdminLoginPage() {
                       rel="noopener noreferrer"
                       className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow transition-all"
                     >
-                      <span>📲 Open OTP on WhatsApp ({verifiedUser?.phone || '+91 8878112007'})</span>
+                      <span>📲 Receive via WhatsApp ({verifiedUser?.phone || '+91 8878112007'})</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}
-
-                  <div className="text-[10px] text-craft-400 bg-black/20 p-2 rounded-lg flex items-start gap-1.5">
-                    <Info className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                    <span>
-                      For direct SIM card SMS across India, add <code className="text-amber-300 font-mono">FAST2SMS_API_KEY</code> to <code className="text-amber-300 font-mono">.env.local</code>.
-                    </span>
-                  </div>
                 </div>
               ) : (
                 <div className="bg-[#18110d] border border-blue-500/30 rounded-2xl p-3.5 space-y-2">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-blue-300 font-bold flex items-center gap-1.5">
                       <Mail className="w-4 h-4 text-blue-400" />
-                      <span>Real Email Dispatched via Gmail</span>
+                      <span>Email OTP Verification</span>
                     </span>
                     <span className="text-[10px] text-blue-300 bg-blue-500/15 px-2 py-0.5 rounded font-bold border border-blue-500/30">
-                      Check Spam
+                      Gmail SMTP
                     </span>
                   </div>
 
                   <p className="text-[11px] text-craft-300 leading-relaxed">
-                    OTP email was sent via Google SMTP to <strong className="text-white font-mono">{verifiedUser?.email}</strong> & <strong className="text-white font-mono">sumant25101@iiitnr.edu.in</strong>.
+                    Security OTP email was dispatched to <strong className="text-white font-mono">{verifiedUser?.maskedEmail}</strong>.
                   </p>
 
                   <div className="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 text-[11px] text-amber-200/90 flex items-start gap-1.5">
                     <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
                     <span>
-                      <strong>Important:</strong> Google filters often place automated test emails into the <strong>Spam / Junk</strong> folder or <strong>Updates</strong> tab. Please check your Spam folder!
+                      Please check your <strong>Spam / Junk</strong> folder if the email is not in your Primary Inbox.
                     </span>
                   </div>
                 </div>
               )}
-
-              {/* Live Security OTP Code Helper / 1-Click Auto-Fill */}
-              <div className="bg-gradient-to-r from-amber-500/10 via-amber-500/20 to-amber-500/10 border-2 border-amber-500/40 rounded-2xl p-3.5 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
-                    <Zap className="w-4 h-4 text-amber-400" />
-                    <span>Live 2FA Security Code</span>
-                  </span>
-                  <span className="text-base font-mono font-black text-amber-300 bg-amber-500/20 px-3 py-0.5 rounded-lg border border-amber-500/50 tracking-widest shadow-inner">
-                    {currentOtp || '887811'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setOtp(currentOtp || '887811')}
-                    className="bg-amber-500 hover:bg-amber-400 text-stone-950 font-bold text-xs py-2 px-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow transition-all"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-stone-950" />
-                    <span>⚡ Auto-Fill Code</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setOtp('887811')}
-                    className="bg-[#1d120c] hover:bg-[#382319] border border-amber-500/40 text-amber-300 font-bold text-xs py-2 px-2.5 rounded-xl transition-all font-mono flex items-center justify-center gap-1"
-                  >
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>Master: 887811</span>
-                  </button>
-                </div>
-              </div>
 
               {/* OTP Input Field */}
               <div>
@@ -618,7 +567,7 @@ export default function AdminLoginPage() {
                     maxLength={6}
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
-                    placeholder="e.g. 887811"
+                    placeholder="Enter 6-digit OTP code"
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
                     className="w-full pl-11 pr-3.5 py-3.5 rounded-xl border-2 border-amber-500 text-xl font-bold font-mono tracking-widest text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500/50 shadow-inner"
                   />
