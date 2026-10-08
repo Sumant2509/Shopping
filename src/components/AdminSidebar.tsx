@@ -44,6 +44,30 @@ export function AdminSidebar() {
     { name: 'Store Settings', href: '/admin/settings', icon: Settings },
   ];
 
+  const [currentUser, setCurrentUser] = React.useState<{ name: string; username: string; role: string } | null>(null);
+
+  React.useEffect(() => {
+    fetch('/api/admin/me')
+      .then(r => r.json())
+      .then(d => {
+        if (d.authenticated && d.admin) setCurrentUser(d.admin);
+      })
+      .catch(() => {});
+  }, []);
+
+  const getRoleBadgeStyle = (role?: string) => {
+    if (role === 'manager') return 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40';
+    if (role === 'support') return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
+    return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+  };
+
+  const getInitials = (name?: string) => {
+    if (!name) return 'SK';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <aside className="w-64 bg-craft-950 text-craft-200 min-h-screen flex flex-col border-r border-craft-900 shrink-0">
       {/* Brand Header */}
@@ -81,8 +105,22 @@ export function AdminSidebar() {
         })}
       </nav>
 
-      {/* Bottom Actions */}
+      {/* Bottom Actions & User Profile */}
       <div className="p-4 border-t border-craft-900 space-y-2">
+        {currentUser && (
+          <div className="p-2.5 bg-craft-900/80 rounded-xl border border-craft-800 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-terracotta-700 text-white font-bold text-xs flex items-center justify-center shrink-0 border border-amber-300">
+              {getInitials(currentUser.name)}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-white truncate">{currentUser.name}</p>
+              <span className={`inline-block text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded border ${getRoleBadgeStyle(currentUser.role)}`}>
+                {currentUser.role === 'manager' ? 'Store Manager' : currentUser.role === 'support' ? 'Support Team' : 'Super Admin'}
+              </span>
+            </div>
+          </div>
+        )}
+
         <Link
           href="/"
           target="_blank"

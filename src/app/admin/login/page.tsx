@@ -17,12 +17,66 @@ import {
   Mail,
   Eye,
   EyeOff,
+  Crown,
+  Briefcase,
+  Headphones,
 } from 'lucide-react';
+
+type LoginRole = 'superadmin' | 'manager' | 'support';
+
+interface RoleConfig {
+  role: LoginRole;
+  title: string;
+  subtitle: string;
+  defaultUsername: string;
+  staffName: string;
+  badge: string;
+  icon: typeof Crown;
+  colorClass: string;
+  activeTabClass: string;
+}
+
+const ROLE_CONFIGS: Record<LoginRole, RoleConfig> = {
+  superadmin: {
+    role: 'superadmin',
+    title: 'Super Admin Portal',
+    subtitle: 'Store Owner full master control & store operations',
+    defaultUsername: 'admin',
+    staffName: 'Sumant Kumar (Owner)',
+    badge: 'Root Super Admin',
+    icon: Crown,
+    colorClass: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
+    activeTabClass: 'bg-terracotta-700 text-white border-amber-400 shadow-md',
+  },
+  manager: {
+    role: 'manager',
+    title: 'Store Manager Portal',
+    subtitle: 'Products catalog, inventory, coupons, and orders management',
+    defaultUsername: 'manager',
+    staffName: 'Devanand Mandal (Store Manager)',
+    badge: 'Store Operations',
+    icon: Briefcase,
+    colorClass: 'text-indigo-300 border-indigo-500/30 bg-indigo-500/10',
+    activeTabClass: 'bg-indigo-700 text-white border-indigo-400 shadow-md',
+  },
+  support: {
+    role: 'support',
+    title: 'Support Team Portal',
+    subtitle: 'Customer orders, courier tracking, and review moderation',
+    defaultUsername: 'support',
+    staffName: 'Crafts Support & Inventory Lead',
+    badge: 'Dispatch & Support',
+    icon: Headphones,
+    colorClass: 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10',
+    activeTabClass: 'bg-emerald-700 text-white border-emerald-400 shadow-md',
+  },
+};
 
 export default function AdminLoginPage() {
   const router = useRouter();
+  const [selectedRole, setSelectedRole] = useState<LoginRole>('superadmin');
   const [step, setStep] = useState<'password' | 'otp'>('password');
-  const [username, setUsername] = useState('');
+  const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [channel, setChannel] = useState<'mobile' | 'email'>('mobile');
@@ -40,6 +94,16 @@ export default function AdminLoginPage() {
     phone: string;
     email: string;
   } | null>(null);
+
+  const activeConfig = ROLE_CONFIGS[selectedRole];
+
+  // Handle Role Switch
+  const handleSelectRole = (role: LoginRole) => {
+    setSelectedRole(role);
+    setUsername(ROLE_CONFIGS[role].defaultUsername);
+    setPassword('');
+    setError(null);
+  };
 
   // Handle Step 1: Verify Password
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -174,13 +238,73 @@ export default function AdminLoginPage() {
         </h2>
         <p className="mt-1 text-xs text-amber-300 font-medium uppercase tracking-wider">
           {step === 'password'
-            ? 'Store Management Portal'
+            ? activeConfig.title
             : '2-Factor Security Verification (Mobile & Email)'}
         </p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
+        {/* Role Selector Tabs (Super Admin / Store Manager / Support Team) */}
+        {step === 'password' && (
+          <div className="mb-4 bg-[#2b1b14] border border-[#4d3224] rounded-2xl p-1.5 shadow-md flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => handleSelectRole('superadmin')}
+              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                selectedRole === 'superadmin'
+                  ? 'bg-terracotta-700 text-white border border-amber-300 shadow-md'
+                  : 'text-craft-400 hover:text-white hover:bg-[#382319]'
+              }`}
+            >
+              <Crown className="w-3.5 h-3.5 text-amber-300" />
+              <span>Super Admin</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectRole('manager')}
+              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                selectedRole === 'manager'
+                  ? 'bg-indigo-700 text-white border border-indigo-300 shadow-md'
+                  : 'text-craft-400 hover:text-white hover:bg-[#382319]'
+              }`}
+            >
+              <Briefcase className="w-3.5 h-3.5 text-indigo-300" />
+              <span>Store Manager</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectRole('support')}
+              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                selectedRole === 'support'
+                  ? 'bg-emerald-700 text-white border border-emerald-300 shadow-md'
+                  : 'text-craft-400 hover:text-white hover:bg-[#382319]'
+              }`}
+            >
+              <Headphones className="w-3.5 h-3.5 text-emerald-300" />
+              <span>Support Team</span>
+            </button>
+          </div>
+        )}
+
         <div className="bg-[#2b1b14] py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-[#4d3224]">
+          {/* Active Role Header Notice */}
+          {step === 'password' && (
+            <div className={`mb-5 p-3 rounded-2xl border flex items-center justify-between text-xs ${activeConfig.colorClass}`}>
+              <div className="flex items-center gap-2">
+                <activeConfig.icon className="w-4 h-4 shrink-0" />
+                <div>
+                  <p className="font-bold">{activeConfig.staffName}</p>
+                  <p className="text-[10px] opacity-80">{activeConfig.subtitle}</p>
+                </div>
+              </div>
+              <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-md bg-black/20">
+                {activeConfig.badge}
+              </span>
+            </div>
+          )}
+
           {error && (
             <div className="mb-5 bg-red-950/80 border border-red-600 text-red-200 p-3.5 rounded-xl flex items-center gap-2 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
@@ -205,7 +329,11 @@ export default function AdminLoginPage() {
               {/* Username Input with Crisp High-Contrast Style */}
               <div>
                 <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5">
-                  Admin Username or Email
+                  {selectedRole === 'manager'
+                    ? 'Store Manager ID or Email'
+                    : selectedRole === 'support'
+                    ? 'Support Team ID or Email'
+                    : 'Super Admin ID or Email'}
                 </label>
                 <div className="relative">
                   <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-600 z-10" />
@@ -214,9 +342,15 @@ export default function AdminLoginPage() {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your admin ID or email"
+                    placeholder={
+                      selectedRole === 'manager'
+                        ? 'manager (or operations@sumantcrafts.in)'
+                        : selectedRole === 'support'
+                        ? 'support (or support@sumantcrafts.in)'
+                        : 'admin (or mandaldevanand@gmail.com)'
+                    }
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
-                    className="w-full pl-10 pr-3.5 py-3 rounded-xl border-2 border-craft-300 text-xs font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner"
+                    className="w-full pl-10 pr-3.5 py-3 rounded-xl border-2 border-craft-300 text-xs font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner font-mono"
                   />
                 </div>
               </div>
@@ -275,7 +409,7 @@ export default function AdminLoginPage() {
               {/* 2FA Verification Channel Picker */}
               <div>
                 <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5">
-                  Preferred 2FA Verification Channel
+                  Receive 2FA Security OTP via:
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -449,7 +583,7 @@ export default function AdminLoginPage() {
             </Link>
 
             <span className="text-[10px] text-craft-400 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" /> Dual 2FA Protected
+              <ShieldCheck className="w-3 h-3 text-emerald-400" /> Multi-Role 2FA Protected
             </span>
           </div>
         </div>
