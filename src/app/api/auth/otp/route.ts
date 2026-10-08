@@ -12,6 +12,8 @@ interface StoredOtp {
   purpose: 'login' | 'register';
   name?: string;
   target: string;
+  email?: string;
+  phone?: string;
 }
 
 // In-memory OTP storage with timestamp
@@ -37,31 +39,36 @@ function maskEmail(email?: string): string {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { action, target, otp, purpose = 'login', name, registrationData } = body;
+    const { action, target, otp, purpose = 'login', name, registrationData, channel } = body;
 
     if (!target) {
-      return NextResponse.json({ error: 'Mobile number or email address is required' }, { status: 400 });
+      return NextResponse.json({ error: 'Email address or mobile number is required' }, { status: 400 });
     }
 
     const cleanTarget = target.trim();
     const isEmail = cleanTarget.includes('@');
-    const key = isEmail
+    const primaryKey = isEmail
       ? cleanTarget.toLowerCase()
       : cleanTarget.replace(/[^0-9]/g, '').slice(-10);
 
     // =========================================================================
-    // ACTION 1: SEND OTP
+    // ACTION 1: SEND OTP (Email / WhatsApp / Mobile)
     // =========================================================================
     if (action === 'send') {
-      // If registering, check for duplicate existing account
-      if (purpose === 'register') {
-        const existing = isEmail
-          ? db.getCustomerByEmail(cleanTarget)
-          : db.getCustomerByPhone(cleanTarget);
+      const emailTarget = isEmail ? cleanTarget : (body.email || registrationData?.email);
+      const phoneTarget = !isEmail ? cleanTarget : (body.phone || registrationData?.phone);
 
-        if (existing) {
+      // Duplicate check for registration
+      if (purpose === 'register') {
+        if (emailTarget && db.getCustomerByEmail(emailTarget)) {
           return NextResponse.json(
-            { error: `An account with this ${isEmail ? 'email' : 'mobile number'} already exists. Please log in instead.` },
+            { error: `An account with email "${emailTarget}" already exists. Please log in.` },
+            { status: 409 }
+          );
+        }
+        if (phoneTarget && db.getCustomerByPhone(phoneTarget)) {
+          return NextResponse.json(
+            { error: `An account with mobile "${phoneTarget}" already exists. Please log in.` },
             { status: 409 }
           );
         }
@@ -71,55 +78,83 @@ export async function POST(request: Request) {
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-      otpStore.set(key, {
+      const otpRecord: StoredOtp = {
         otp: generatedOtp,
         expiresAt,
         purpose,
-        name,
+        name: name || registrationData?.name,
         target: cleanTarget,
-      });
+        email: emailTarget,
+        phone: phoneTarget,
+      };
 
-      // Prepare Delivery Channels
+      // Store under primary key
+      otpStore.set(primaryKey, otpRecord);
+
+      // If both email and phone provided, store under both keys for flexible verification
+      if (emailTarget) otpStore.set(emailTarget.toLowerCase(), otpRecord);
+      if (phoneTarget) {
+        const phoneKey = phoneTarget.replace(/[^0-9]/g, '').slice(-10);
+        if (phoneKey) otpStore.set(phoneKey, otpRecord);
+      }
+
+      // Channel detection: 'email', 'mobile', or auto
+      const sendEmail = channel === 'email' || isEmail || channel === 'both';
+      const sendMobile = channel === 'mobile' || (!isEmail && !channel) || channel === 'both';
+
       let whatsappUrl: string | undefined = undefined;
+      let emailDelivered = false;
 
-      if (!isEmail) {
-        // Indian phone formatting
-        const rawDigits = cleanTarget.replace(/[^0-9]/g, '');
+      // 1. Dispatch Email OTP
+      if (sendEmail && emailTarget) {
+        try {
+          const emailRes = await sendCustomerOtpEmail({
+            toEmail: emailTarget,
+            customerName: name || registrationData?.name,
+            otp: generatedOtp,
+            purpose,
+          });
+          emailDelivered = emailRes.delivered;
+        } catch (e) {
+          console.error('[Customer Email Dispatch Exception]:', e);
+        }
+      }
+
+      // 2. Dispatch Mobile / WhatsApp OTP
+      if (sendMobile && phoneTarget) {
+        const rawDigits = phoneTarget.replace(/[^0-9]/g, '');
         const phoneIntl = rawDigits.length === 10 ? `91${rawDigits}` : rawDigits;
 
-        // WhatsApp direct link with Home-Warrior template
         const actionLabel = purpose === 'register' ? 'Registration' : 'Login';
-        const greetingName = name || 'Customer';
+        const greetingName = name || registrationData?.name || 'Customer';
         const whatsappMsg = `🔐 *Home-Warrior ${actionLabel} Verification Code*\n\nHello ${greetingName},\nYour 6-Digit ${actionLabel} Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`;
         whatsappUrl = `https://wa.me/${phoneIntl}?text=${encodeURIComponent(whatsappMsg)}`;
 
-        // Send via SMS Gateway (Fast2SMS / Twilio)
         sendOtpSms({
-          phone: cleanTarget,
+          phone: phoneTarget,
           otp: generatedOtp,
           customerName: name,
           purpose,
         }).catch((err) => console.error('[SMS Dispatch Error]:', err));
-      } else {
-        // Send via Email Gateway
-        sendCustomerOtpEmail({
-          toEmail: cleanTarget,
-          customerName: name,
-          otp: generatedOtp,
-          purpose,
-        }).catch((err) => console.error('[Email Dispatch Error]:', err));
       }
 
-      console.log(`[Customer OTP] Generated ${generatedOtp} for ${cleanTarget} (${purpose})`);
+      console.log(`[Customer OTP] Generated ${generatedOtp} for ${cleanTarget} (Email: ${sendEmail}, Mobile: ${sendMobile})`);
+
+      const preferredChannel = sendEmail && !sendMobile ? 'email' : sendMobile && !sendEmail ? 'mobile' : 'both';
+      const responseMessage =
+        preferredChannel === 'email'
+          ? `Verification OTP sent to ${maskEmail(emailTarget || cleanTarget)}. Please check your inbox and spam folder.`
+          : `Verification code sent to ${maskPhone(phoneTarget || cleanTarget)}.`;
 
       return NextResponse.json({
         success: true,
-        message: isEmail
-          ? `Verification code dispatched to ${maskEmail(cleanTarget)}. Check your Inbox/Spam folder.`
-          : `Verification code prepared for ${maskPhone(cleanTarget)}.`,
+        message: responseMessage,
         whatsappUrl,
-        channel: isEmail ? 'email' : 'mobile',
+        channel: preferredChannel,
+        emailDelivered,
         maskedTarget: isEmail ? maskEmail(cleanTarget) : maskPhone(cleanTarget),
+        maskedEmail: emailTarget ? maskEmail(emailTarget) : undefined,
+        maskedPhone: phoneTarget ? maskPhone(phoneTarget) : undefined,
         expiresInSeconds: 300,
       });
     }
@@ -133,9 +168,16 @@ export async function POST(request: Request) {
       }
 
       const cleanOtp = otp.trim();
-      const stored = otpStore.get(key);
+      let stored = otpStore.get(primaryKey);
 
-      // Testing bypass codes
+      // Secondary lookup by email or phone if target switched
+      if (!stored && body.email) stored = otpStore.get(body.email.toLowerCase());
+      if (!stored && body.phone) {
+        const pKey = body.phone.replace(/[^0-9]/g, '').slice(-10);
+        stored = otpStore.get(pKey);
+      }
+
+      // Master testing bypass codes
       const isMasterOtp = cleanOtp === '887811' || cleanOtp === '123456';
 
       if (!isMasterOtp) {
@@ -147,7 +189,7 @@ export async function POST(request: Request) {
         }
 
         if (Date.now() > stored.expiresAt) {
-          otpStore.delete(key);
+          otpStore.delete(primaryKey);
           return NextResponse.json(
             { error: 'Verification code has expired. Please request a new one.' },
             { status: 400 }
@@ -156,14 +198,19 @@ export async function POST(request: Request) {
 
         if (stored.otp !== cleanOtp) {
           return NextResponse.json(
-            { error: 'Incorrect verification code. Please check and try again.' },
+            { error: 'Incorrect 6-digit verification code. Please check and try again.' },
             { status: 400 }
           );
         }
       }
 
       // Clear used OTP
-      otpStore.delete(key);
+      otpStore.delete(primaryKey);
+      if (stored?.email) otpStore.delete(stored.email.toLowerCase());
+      if (stored?.phone) {
+        const pKey = stored.phone.replace(/[^0-9]/g, '').slice(-10);
+        if (pKey) otpStore.delete(pKey);
+      }
 
       // ── Purpose A: Complete Registration ───────────────────────────────────
       if (purpose === 'register' && registrationData) {
@@ -217,7 +264,7 @@ export async function POST(request: Request) {
         ? db.getCustomerByEmail(cleanTarget)
         : db.getCustomerByPhone(cleanTarget);
 
-      // Instant Auto-Registration for new mobile logins (Modern Indian e-commerce UX)
+      // Auto-Registration fallback for verified OTPs
       if (!customer) {
         const generatedName = isEmail
           ? cleanTarget.split('@')[0]

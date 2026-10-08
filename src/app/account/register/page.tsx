@@ -20,6 +20,7 @@ import {
   MessageCircle,
   RefreshCw,
   ShieldCheck,
+  Inbox,
 } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
@@ -37,6 +38,7 @@ export default function CustomerRegisterPage() {
     confirmPassword: '',
   });
 
+  const [selectedChannel, setSelectedChannel] = useState<'email' | 'mobile'>('email');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,9 +48,10 @@ export default function CustomerRegisterPage() {
   const [otpCode, setOtpCode] = useState('');
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [maskedTarget, setMaskedTarget] = useState<string | null>(null);
+  const [activeChannel, setActiveChannel] = useState<'email' | 'mobile'>('email');
   const [resendTimer, setResendTimer] = useState<number>(0);
 
-  // Resend OTP countdown timer
+  // Resend Countdown Timer
   useEffect(() => {
     if (resendTimer > 0) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
@@ -61,9 +64,11 @@ export default function CustomerRegisterPage() {
   };
 
   // STEP 1: Submit Details & Send Verification OTP
-  const handleInitiateRegister = async (e?: React.FormEvent) => {
+  const handleInitiateRegister = async (channelPreference?: 'email' | 'mobile', e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setError(null);
+
+    const targetChannel = channelPreference || selectedChannel;
 
     // Validation
     if (!form.name.trim()) {
@@ -71,15 +76,15 @@ export default function CustomerRegisterPage() {
       return;
     }
 
-    const cleanPhone = form.phone.replace(/[^0-9]/g, '');
-    if (cleanPhone.length < 10) {
-      setError('Please enter a valid 10-digit Indian mobile number');
-      return;
-    }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(form.email.trim())) {
       setError('Please enter a valid email address');
+      return;
+    }
+
+    const cleanPhone = form.phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10) {
+      setError('Please enter a valid 10-digit Indian mobile number');
       return;
     }
 
@@ -96,14 +101,22 @@ export default function CustomerRegisterPage() {
     setLoading(true);
 
     try {
+      const target = targetChannel === 'email' ? form.email.trim() : cleanPhone;
+
       const res = await fetch('/api/auth/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'send',
-          target: cleanPhone,
+          target,
+          channel: targetChannel,
           purpose: 'register',
           name: form.name.trim(),
+          registrationData: {
+            name: form.name.trim(),
+            email: form.email.toLowerCase().trim(),
+            phone: cleanPhone,
+          },
         }),
       });
 
@@ -113,8 +126,9 @@ export default function CustomerRegisterPage() {
         setError(data.error || 'Failed to dispatch verification code');
       } else {
         setStep('verify');
+        setActiveChannel(targetChannel);
         setWhatsappUrl(data.whatsappUrl || null);
-        setMaskedTarget(data.maskedTarget || cleanPhone);
+        setMaskedTarget(targetChannel === 'email' ? (data.maskedEmail || form.email) : (data.maskedPhone || cleanPhone));
         setResendTimer(60);
       }
     } catch {
@@ -137,12 +151,14 @@ export default function CustomerRegisterPage() {
 
     try {
       const cleanPhone = form.phone.replace(/[^0-9]/g, '');
+      const primaryTarget = activeChannel === 'email' ? form.email.trim() : cleanPhone;
+
       const res = await fetch('/api/auth/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'verify',
-          target: cleanPhone,
+          target: primaryTarget,
           otp: otpCode.trim(),
           purpose: 'register',
           registrationData: {
@@ -157,7 +173,7 @@ export default function CustomerRegisterPage() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid or expired OTP code');
+        setError(data.error || 'Invalid or expired verification code');
       } else {
         setSuccess(true);
         await refreshCustomer();
@@ -185,12 +201,12 @@ export default function CustomerRegisterPage() {
           <ShoppingBag className="w-8 h-8" />
         </div>
         <h1 className="font-serif font-bold text-3xl text-craft-950">
-          {step === 'form' ? 'Create Customer Account' : 'Verify Mobile OTP'}
+          {step === 'form' ? 'Create Customer Account' : 'Verify Security OTP'}
         </h1>
         <p className="mt-2 text-craft-600 text-sm">
           {step === 'form'
-            ? 'Join Home-Warrior for faster checkout and artisan updates'
-            : 'Enter the 6-digit security code sent to your phone'}
+            ? 'Join Home-Warrior with Email or WhatsApp OTP verification'
+            : `Enter the 6-digit code sent to your ${activeChannel === 'email' ? 'email address' : 'mobile number'}`}
         </p>
       </div>
 
@@ -201,7 +217,7 @@ export default function CustomerRegisterPage() {
           {success && (
             <div className="mb-5 bg-green-50 border border-green-300 text-green-800 p-4 rounded-2xl flex items-center gap-2 text-sm">
               <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-              <span>Account verified & created! Redirecting to profile...</span>
+              <span>Account successfully verified! Redirecting to profile...</span>
             </div>
           )}
 
@@ -214,7 +230,7 @@ export default function CustomerRegisterPage() {
 
           {/* STEP 1: Registration Form */}
           {step === 'form' ? (
-            <form onSubmit={handleInitiateRegister} className="space-y-4">
+            <form onSubmit={(e) => handleInitiateRegister(selectedChannel, e)} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
                   Full Name *
@@ -226,24 +242,7 @@ export default function CustomerRegisterPage() {
                     required
                     value={form.name}
                     onChange={handleChange('name')}
-                    placeholder="Rahul Sharma"
-                    className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
-                  Mobile Number (For WhatsApp / SMS OTP) *
-                </label>
-                <div className="relative">
-                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-400" />
-                  <input
-                    type="tel"
-                    required
-                    value={form.phone}
-                    onChange={handleChange('phone')}
-                    placeholder="9876543210"
+                    placeholder="e.g. Rahul Sharma"
                     className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
                   />
                 </div>
@@ -260,7 +259,24 @@ export default function CustomerRegisterPage() {
                     required
                     value={form.email}
                     onChange={handleChange('email')}
-                    placeholder="you@example.com"
+                    placeholder="you@gmail.com"
+                    className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
+                  Mobile Number *
+                </label>
+                <div className="relative">
+                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-400" />
+                  <input
+                    type="tel"
+                    required
+                    value={form.phone}
+                    onChange={handleChange('phone')}
+                    placeholder="9876543210"
                     className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
                   />
                 </div>
@@ -309,20 +325,61 @@ export default function CustomerRegisterPage() {
                 </div>
               </div>
 
+              {/* Verification Channel Selector */}
+              <div className="pt-2">
+                <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-2">
+                  Verify Account Using:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChannel('email')}
+                    className={`p-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                      selectedChannel === 'email'
+                        ? 'border-terracotta-600 bg-terracotta-50 text-terracotta-800 ring-2 ring-terracotta-200'
+                        : 'border-craft-200 bg-white text-craft-700 hover:border-craft-400'
+                    }`}
+                  >
+                    <Inbox className="w-4 h-4 text-terracotta-700" />
+                    <span>Email OTP</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedChannel('mobile')}
+                    className={`p-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
+                      selectedChannel === 'mobile'
+                        ? 'border-terracotta-600 bg-terracotta-50 text-terracotta-800 ring-2 ring-terracotta-200'
+                        : 'border-craft-200 bg-white text-craft-700 hover:border-craft-400'
+                    }`}
+                  >
+                    <MessageCircle className="w-4 h-4 text-emerald-600" />
+                    <span>WhatsApp OTP</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-warm flex items-center justify-center gap-2 transition-all mt-2"
+                className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-warm flex items-center justify-center gap-2 transition-all mt-4"
               >
-                <span>{loading ? 'Sending Verification Code...' : 'Verify Mobile & Create Account'}</span>
+                <span>
+                  {loading
+                    ? 'Sending Verification Code...'
+                    : selectedChannel === 'email'
+                    ? 'Verify via Email OTP'
+                    : 'Verify via WhatsApp OTP'}
+                </span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
           ) : (
             /* STEP 2: OTP Verification */
             <form onSubmit={handleVerifyOtp} className="space-y-4">
-              {/* WhatsApp direct delivery button */}
-              {whatsappUrl && (
+              {/* WhatsApp direct delivery button (if WhatsApp/Mobile channel) */}
+              {whatsappUrl && activeChannel === 'mobile' && (
                 <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
                   <p className="text-[11px] font-semibold text-emerald-900">
                     Get your verification code instantly on WhatsApp:
@@ -336,6 +393,15 @@ export default function CustomerRegisterPage() {
                     <MessageCircle className="w-4 h-4" />
                     <span>Open WhatsApp to Get Code</span>
                   </a>
+                </div>
+              )}
+
+              {activeChannel === 'email' && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-2 text-xs text-amber-900">
+                  <Inbox className="w-4 h-4 text-amber-700 shrink-0" />
+                  <span>
+                    OTP delivered to your inbox. Check <strong>Spam / Junk</strong> folder if not visible.
+                  </span>
                 </div>
               )}
 
@@ -357,7 +423,7 @@ export default function CustomerRegisterPage() {
                   />
                 </div>
                 <p className="text-[11px] text-craft-500 mt-1.5">
-                  Code sent to <strong className="text-craft-800">{maskedTarget || form.phone}</strong>
+                  Code sent to <strong className="text-craft-800">{maskedTarget}</strong>
                 </p>
               </div>
 
@@ -369,6 +435,34 @@ export default function CustomerRegisterPage() {
                 <ShieldCheck className="w-4 h-4" />
                 <span>{loading ? 'Verifying...' : 'Verify Code & Complete Registration'}</span>
               </button>
+
+              {/* Channel switch helper if code not received */}
+              <div className="pt-2 p-3 bg-craft-50 rounded-xl border border-craft-200 text-center space-y-1.5">
+                <p className="text-[11px] text-craft-600 font-medium">Didn't receive code?</p>
+                <div className="flex items-center justify-center gap-3 text-xs">
+                  {activeChannel === 'email' ? (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleInitiateRegister('mobile')}
+                      className="font-bold text-emerald-700 hover:underline flex items-center gap-1"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>Send to WhatsApp Instead</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled={loading}
+                      onClick={() => handleInitiateRegister('email')}
+                      className="font-bold text-terracotta-700 hover:underline flex items-center gap-1"
+                    >
+                      <Inbox className="w-3.5 h-3.5" />
+                      <span>Send to Email Instead</span>
+                    </button>
+                  )}
+                </div>
+              </div>
 
               <div className="flex items-center justify-between pt-2">
                 <button
@@ -386,11 +480,11 @@ export default function CustomerRegisterPage() {
                 <button
                   type="button"
                   disabled={resendTimer > 0 || loading}
-                  onClick={() => handleInitiateRegister()}
+                  onClick={() => handleInitiateRegister(activeChannel)}
                   className="text-xs text-terracotta-700 hover:text-terracotta-800 disabled:opacity-40 flex items-center gap-1 font-bold"
                 >
                   <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                  <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend OTP'}</span>
+                  <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}</span>
                 </button>
               </div>
             </form>
@@ -400,7 +494,7 @@ export default function CustomerRegisterPage() {
             <p className="text-sm text-craft-600">
               Already have an account?{' '}
               <Link href="/account/login" className="font-bold text-terracotta-700 hover:underline">
-                Sign in with OTP / Password
+                Sign in with Email OTP / Password
               </Link>
             </p>
           </div>

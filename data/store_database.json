@@ -456,6 +456,28 @@
       "id": "cust-1791311437485-kvyji",
       "createdAt": "2026-10-06T18:30:37.485Z",
       "updatedAt": "2026-10-06T18:30:37.485Z"
+    },
+    {
+      "name": "Pri K",
+      "email": "mandald271@gmail.com",
+      "phone": "8878112086",
+      "passwordHash": "$2a$10$tgtq250fOOvM2SGRZJ5O5OmQ91fUFS8C/PuJaDEJw2QidssfZI82a",
+      "addresses": [],
+      "isActive": true,
+      "id": "cust-1791491914087-64unr",
+      "createdAt": "2026-10-08T20:38:34.087Z",
+      "updatedAt": "2026-10-08T20:38:34.087Z"
+    },
+    {
+      "name": "mandaldevanand",
+      "email": "mandaldevanand@gmail.com",
+      "phone": "",
+      "passwordHash": "",
+      "addresses": [],
+      "isActive": true,
+      "id": "cust-1791492411358-irpu8",
+      "createdAt": "2026-10-08T20:46:51.358Z",
+      "updatedAt": "2026-10-08T20:46:51.358Z"
     }
   ]
 }
