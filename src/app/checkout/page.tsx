@@ -37,7 +37,9 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, discount, shippingFee, totalAmount, coupon, clearCart } = useCart();
 
-  const COD_FEE = 40;
+  // Dynamic store payment & delivery settings
+  const [codFee, setCodFee] = useState(40);
+  const [enableCOD, setEnableCOD] = useState(true);
 
   // Customer Details
   const [name, setName] = useState('');
@@ -71,6 +73,13 @@ export default function CheckoutPage() {
         if (data.upiMerchantName) setStoreUpiName(data.upiMerchantName);
         if (typeof data.isRazorpayLive === 'boolean') setIsRazorpayLive(data.isRazorpayLive);
         if (data.razorpayKeyId) setRazorpayKeyId(data.razorpayKeyId);
+        if (typeof data.codFee === 'number') setCodFee(data.codFee);
+        if (typeof data.enableCOD === 'boolean') {
+          setEnableCOD(data.enableCOD);
+          if (!data.enableCOD && paymentMethod === 'COD') {
+            setPaymentMethod('UPI');
+          }
+        }
       })
       .catch((err) => console.error('Failed to load store settings:', err));
 
@@ -247,7 +256,7 @@ export default function CheckoutPage() {
     };
 
     const isCOD = paymentMethod === 'COD';
-    const finalPayable = totalAmount + (isCOD ? COD_FEE : 0);
+    const finalPayable = totalAmount + (isCOD ? codFee : 0);
 
     // ─────────────────────────────────────────────────────────────
     // CASE 1: Cash on Delivery (COD)
@@ -263,7 +272,7 @@ export default function CheckoutPage() {
             items,
             paymentMethod: 'COD',
             couponCode: coupon?.code,
-            codFee: COD_FEE,
+            codFee,
             notes: notes.trim(),
           }),
         });
@@ -664,32 +673,34 @@ export default function CheckoutPage() {
                   </label>
 
                   {/* Cash on Delivery */}
-                  <label
-                    className={`flex items-start gap-3.5 p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'COD'
-                        ? 'border-terracotta-600 bg-terracotta-50/70 ring-2 ring-terracotta-400'
-                        : 'border-craft-200 hover:border-craft-300 bg-white'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === 'COD'}
-                      onChange={() => setPaymentMethod('COD')}
-                      className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Banknote className="w-4 h-4 text-terracotta-700" />
-                        <span className="font-bold text-xs sm:text-sm text-craft-900">
-                          Cash on Delivery (COD)
-                        </span>
+                  {enableCOD && (
+                    <label
+                      className={`flex items-start gap-3.5 p-4 rounded-2xl border cursor-pointer transition-all ${
+                        paymentMethod === 'COD'
+                          ? 'border-terracotta-600 bg-terracotta-50/70 ring-2 ring-terracotta-400'
+                          : 'border-craft-200 hover:border-craft-300 bg-white'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={paymentMethod === 'COD'}
+                        onChange={() => setPaymentMethod('COD')}
+                        className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <Banknote className="w-4 h-4 text-terracotta-700" />
+                          <span className="font-bold text-xs sm:text-sm text-craft-900">
+                            Cash on Delivery (COD)
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-craft-500 mt-1">
+                          Pay cash or scan courier QR code upon doorstep delivery ({codFee > 0 ? `+${formatPrice(codFee)} handling fee` : 'No extra fee'}).
+                        </p>
                       </div>
-                      <p className="text-[11px] text-craft-500 mt-1">
-                        Pay cash or scan courier QR code upon doorstep delivery.
-                      </p>
-                    </div>
-                  </label>
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -765,14 +776,14 @@ export default function CheckoutPage() {
                 {paymentMethod === 'COD' && (
                   <div className="flex justify-between text-amber-700">
                     <span>COD Handling Fee</span>
-                    <span className="font-semibold">+{formatPrice(COD_FEE)}</span>
+                    <span className="font-semibold">+{formatPrice(codFee)}</span>
                   </div>
                 )}
 
                 <div className="border-t border-craft-200 pt-3 flex justify-between text-base font-bold text-craft-950">
                   <span>Total Payable Amount</span>
                   <span className="text-xl text-terracotta-800">
-                    {formatPrice(totalAmount + (paymentMethod === 'COD' ? COD_FEE : 0))}
+                    {formatPrice(totalAmount + (paymentMethod === 'COD' ? codFee : 0))}
                   </span>
                 </div>
               </div>
@@ -788,7 +799,7 @@ export default function CheckoutPage() {
                 ) : paymentMethod === 'COD' ? (
                   <>
                     <CheckCircle2 className="w-5 h-5" />
-                    <span>Place Cash on Delivery Order ({formatPrice(totalAmount + COD_FEE)})</span>
+                    <span>Place Cash on Delivery Order ({formatPrice(totalAmount + codFee)})</span>
                   </>
                 ) : (
                   <>

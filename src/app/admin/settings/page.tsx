@@ -206,6 +206,9 @@ export default function AdminSettingsPage() {
 
       if (res.ok) {
         setSaved(true);
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new Event('store_settings_updated'));
+        }
         setTimeout(() => setSaved(false), 2500);
       }
     } catch (e) {

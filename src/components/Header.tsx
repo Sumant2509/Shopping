@@ -23,7 +23,7 @@ import { formatPrice, generateWhatsAppLink } from '@/lib/utils';
 export function Header() {
   const pathname = usePathname();
   const router = useRouter();
-  const { totalItems, subtotal, setIsCartDrawerOpen } = useCart();
+  const { totalItems, subtotal, setIsCartDrawerOpen, freeShippingThreshold } = useCart();
   const { customer } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -58,7 +58,7 @@ export function Header() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 mx-auto sm:mx-0 font-medium tracking-wide">
             <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-            <span>Direct from Maker (Sumant Kumar) • 100% Handmade in India • Free Shipping on ₹699+</span>
+            <span>Direct from Maker (Sumant Kumar) • 100% Handmade in India • Free Shipping on ₹{freeShippingThreshold}+</span>
           </div>
           <div className="hidden sm:flex items-center gap-4 text-xs text-amber-100">
             <a 

@@ -67,10 +67,14 @@ export async function POST(request: Request) {
       }
     }
 
-    const shippingFee = calculateShippingFee(subtotal);
-    const totalAmount = Math.max(0, subtotal - discount + shippingFee);
+    const settings = db.getSettings();
+    const freeShippingThreshold = typeof settings.freeShippingThreshold === 'number' ? settings.freeShippingThreshold : 699;
+    const flatShippingRate = typeof settings.flatShippingRate === 'number' ? settings.flatShippingRate : 60;
+    const codFee = typeof settings.codFee === 'number' ? settings.codFee : 40;
 
+    const shippingFee = calculateShippingFee(subtotal, freeShippingThreshold, flatShippingRate);
     const isCOD = paymentMethod === 'COD';
+    const totalAmount = Math.max(0, subtotal - discount + shippingFee + (isCOD ? codFee : 0));
 
     // Verify online payment authenticity for UPI / Cards / Net Banking
     if (!isCOD) {

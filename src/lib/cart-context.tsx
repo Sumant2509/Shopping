@@ -27,8 +27,8 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const FREE_SHIPPING_THRESHOLD = 699;
-const FLAT_SHIPPING_FEE = 60;
+const DEFAULT_FREE_SHIPPING_THRESHOLD = 699;
+const DEFAULT_FLAT_SHIPPING_FEE = 60;
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<OrderItem[]>([]);
@@ -36,6 +36,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [couponError, setCouponError] = useState<string | null>(null);
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+
+  // Dynamic store shipping rules
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState<number>(DEFAULT_FREE_SHIPPING_THRESHOLD);
+  const [flatShippingFee, setFlatShippingFee] = useState<number>(DEFAULT_FLAT_SHIPPING_FEE);
+
+  // Load store shipping rules dynamically
+  useEffect(() => {
+    const fetchShippingSettings = () => {
+      fetch('/api/settings/public')
+        .then((res) => res.json())
+        .then((data) => {
+          if (typeof data.freeShippingThreshold === 'number') {
+            setFreeShippingThreshold(data.freeShippingThreshold);
+          }
+          if (typeof data.flatShippingRate === 'number') {
+            setFlatShippingFee(data.flatShippingRate);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchShippingSettings();
+    window.addEventListener('store_settings_updated', fetchShippingSettings);
+    window.addEventListener('focus', fetchShippingSettings);
+    return () => {
+      window.removeEventListener('store_settings_updated', fetchShippingSettings);
+      window.removeEventListener('focus', fetchShippingSettings);
+    };
+  }, []);
 
   // Load cart from localStorage
   useEffect(() => {
@@ -145,9 +174,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const shippingFee = calculateShippingFee(subtotal, FREE_SHIPPING_THRESHOLD, FLAT_SHIPPING_FEE);
+  const shippingFee = calculateShippingFee(subtotal, freeShippingThreshold, flatShippingFee);
   const totalAmount = Math.max(0, subtotal - discount + (items.length > 0 ? shippingFee : 0));
-  const freeShippingRemaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const freeShippingRemaining = Math.max(0, freeShippingThreshold - subtotal);
 
   const applyCoupon = async (code: string): Promise<{ success: boolean; message: string }> => {
     setCouponError(null);
@@ -206,7 +235,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         discount,
         shippingFee,
         totalAmount,
-        freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+        freeShippingThreshold,
         freeShippingRemaining,
       }}
     >
