@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyPassword, signAdminToken } from '@/lib/auth';
+import { sendOtpEmail } from '@/lib/email';
 
 // In-memory Admin OTP store: username -> { otp, channel, expiresAt, adminId }
 const adminOtpStore = new Map<
@@ -54,13 +55,26 @@ export async function POST(request: Request) {
         adminId: admin.id,
       });
 
-      console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} to ${selectedChannel === 'mobile' ? admin.phone : admin.email}`);
+      let emailStatus: { delivered: boolean; error?: string } = { delivered: false };
+      if (selectedChannel === 'email') {
+        emailStatus = await sendOtpEmail({
+          toEmail: admin.email,
+          adminName: admin.name,
+          otp: generatedOtp,
+          roleTitle: admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin',
+        });
+      }
+
+      console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} to ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered})`);
 
       return NextResponse.json({
         success: true,
         channel: selectedChannel,
-        message: `Security OTP sent to ${selectedChannel === 'mobile' ? 'Mobile (' + maskPhone(admin.phone) + ')' : 'Email (' + maskEmail(admin.email) + ')'}`,
+        message: emailStatus.delivered
+          ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your inbox / spam folder.`
+          : `Security OTP sent to ${selectedChannel === 'mobile' ? 'Mobile (' + maskPhone(admin.phone) + ')' : 'Email (' + maskEmail(admin.email) + ')'}`,
         demoOtp: generatedOtp,
+        emailDelivered: emailStatus.delivered,
         maskedTarget: selectedChannel === 'mobile' ? maskPhone(admin.phone) : maskEmail(admin.email),
       });
     }
@@ -135,7 +149,17 @@ export async function POST(request: Request) {
         adminId: admin.id,
       });
 
-      console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email}`);
+      let emailStatus: { delivered: boolean; error?: string } = { delivered: false };
+      if (selectedChannel === 'email') {
+        emailStatus = await sendOtpEmail({
+          toEmail: admin.email,
+          adminName: admin.name,
+          otp: generatedOtp,
+          roleTitle: admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin',
+        });
+      }
+
+      console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered})`);
 
       return NextResponse.json({
         success: true,
@@ -151,8 +175,11 @@ export async function POST(request: Request) {
           phone: admin.phone,
           email: admin.email,
         },
-        message: `Credentials verified. 2FA Security OTP sent to registered ${selectedChannel === 'mobile' ? 'Mobile (' + maskPhone(admin.phone) + ')' : 'Email (' + maskEmail(admin.email) + ')'}`,
+        message: emailStatus.delivered
+          ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your inbox / spam folder.`
+          : `Credentials verified. 2FA Security OTP sent to registered ${selectedChannel === 'mobile' ? 'Mobile (' + maskPhone(admin.phone) + ')' : 'Email (' + maskEmail(admin.email) + ')'}`,
         demoOtp: generatedOtp,
+        emailDelivered: emailStatus.delivered,
       });
     }
 
