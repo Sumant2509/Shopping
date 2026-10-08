@@ -289,21 +289,6 @@ export default function AdminLoginPage() {
         )}
 
         <div className="bg-[#2b1b14] py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-[#4d3224]">
-          {/* Active Role Header Notice */}
-          {step === 'password' && (
-            <div className={`mb-5 p-3 rounded-2xl border flex items-center justify-between text-xs ${activeConfig.colorClass}`}>
-              <div className="flex items-center gap-2">
-                <activeConfig.icon className="w-4 h-4 shrink-0" />
-                <div>
-                  <p className="font-bold">{activeConfig.staffName}</p>
-                  <p className="text-[10px] opacity-80">{activeConfig.subtitle}</p>
-                </div>
-              </div>
-              <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded-md bg-black/20">
-                {activeConfig.badge}
-              </span>
-            </div>
-          )}
 
           {error && (
             <div className="mb-5 bg-red-950/80 border border-red-600 text-red-200 p-3.5 rounded-xl flex items-center gap-2 text-xs">
