@@ -13,13 +13,12 @@ export async function sendOtpEmail({
   otp,
   roleTitle = 'Admin Portal Access',
 }: SendOtpEmailParams): Promise<{ delivered: boolean; error?: string }> {
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
-  const host = process.env.SMTP_HOST || 'smtp.gmail.com';
-  const port = Number(process.env.SMTP_PORT) || 465;
+  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || '').trim();
+  const rawPass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '').trim();
+  const cleanPass = rawPass.replace(/\s+/g, '');
 
   // If no SMTP configured, log warning and return
-  if (!user || !pass) {
+  if (!user || !cleanPass) {
     console.warn(
       `[Email Gateway] Real email not sent: SMTP_USER/GMAIL_USER or SMTP_PASS/GMAIL_APP_PASSWORD is not set in .env.local. OTP: ${otp} for ${toEmail}`
     );
@@ -31,12 +30,10 @@ export async function sendOtpEmail({
 
   try {
     const transporter = nodemailer.createTransport({
-      host,
-      port,
-      secure: port === 465,
+      service: 'gmail',
       auth: {
         user,
-        pass,
+        pass: cleanPass,
       },
     });
 
