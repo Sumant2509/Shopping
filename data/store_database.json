@@ -98,6 +98,48 @@
   ],
   "orders": [
     {
+      "orderNumber": "SKM-2026-3216",
+      "customer": {
+        "name": "Test Online Shopper",
+        "phone": "9876543210",
+        "email": "shopper@example.com",
+        "address": {
+          "houseNo": "Flat 101",
+          "street": "Station Road",
+          "city": "Durg",
+          "state": "Chhattisgarh",
+          "pincode": "491001"
+        }
+      },
+      "items": [
+        {
+          "productId": "prod-starburst-01",
+          "name": "Handmade Starburst Mat",
+          "slug": "handmade-starburst-wheel-doormat",
+          "price": 499,
+          "mrp": 899,
+          "quantity": 1,
+          "selectedColor": "Terracotta & Gold",
+          "dimensions": "22 inches",
+          "shape": "starburst"
+        }
+      ],
+      "subtotal": 499,
+      "shippingFee": 60,
+      "discount": 0,
+      "totalAmount": 559,
+      "paymentMethod": "UPI",
+      "paymentStatus": "PAID",
+      "razorpayPaymentId": "UPI_TEST_123",
+      "upiUtr": "429381749201",
+      "upiTransactionId": "UPI_TEST_123",
+      "orderStatus": "CONFIRMED",
+      "estimatedDeliveryDate": "Wed, 14 Oct, 2026",
+      "id": "ord-1791494307161",
+      "createdAt": "2026-10-08T21:18:27.161Z",
+      "updatedAt": "2026-10-08T21:18:27.161Z"
+    },
+    {
       "orderNumber": "SKM-2026-9951",
       "customer": {
         "name": "Sumit Kumar",
@@ -402,7 +444,10 @@
     "amazonStoreUrl": "https://amazon.in",
     "flipkartStoreUrl": "https://flipkart.com",
     "instagramUrl": "https://instagram.com",
-    "returnWindowDays": 7
+    "returnWindowDays": 7,
+    "upiId": "8878112007@upi",
+    "upiMerchantName": "Home-Warrior",
+    "enableUpiPayment": true
   },
   "adminUsers": [
     {
@@ -478,6 +523,17 @@
       "id": "cust-1791492411358-irpu8",
       "createdAt": "2026-10-08T20:46:51.358Z",
       "updatedAt": "2026-10-08T20:46:51.358Z"
+    },
+    {
+      "name": "Devanand Mandal",
+      "email": "mandaldevanand271@gmail.com",
+      "phone": "8874984456",
+      "passwordHash": "$2a$10$oRmsaz0XlSAAm88f1ceND.ke6BZRDYf7W/jkszDsFoDeaDVjzaPt2",
+      "addresses": [],
+      "isActive": true,
+      "id": "cust-1791492795774-9okhv",
+      "createdAt": "2026-10-08T20:53:15.774Z",
+      "updatedAt": "2026-10-08T20:53:15.774Z"
     }
   ]
 }

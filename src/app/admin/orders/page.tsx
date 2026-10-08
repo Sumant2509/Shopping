@@ -61,6 +61,23 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleUpdatePaymentStatus = async (orderId: string, paymentStatus: 'PAID' | 'PENDING' | 'FAILED' | 'REFUNDED') => {
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ paymentStatus }),
+      });
+      if (res.ok) {
+        setOrders(prev =>
+          prev.map(o => (o.id === orderId ? { ...o, paymentStatus } : o))
+        );
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
   const handleSaveTracking = async (orderId: string) => {
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -203,7 +220,7 @@ export default function AdminOrdersPage() {
               >
                 {/* Order Top Bar */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-craft-100">
-                  <div className="flex items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <span className="font-mono font-bold text-sm text-terracotta-800 bg-terracotta-50 px-3 py-1 rounded-full border border-terracotta-200">
                       {order.orderNumber}
                     </span>
@@ -215,23 +232,53 @@ export default function AdminOrdersPage() {
                     }`}>
                       {order.paymentMethod} • {order.paymentStatus}
                     </span>
+                    {order.upiUtr && (
+                      <span className="font-mono text-[10px] bg-purple-50 text-purple-900 border border-purple-200 px-2.5 py-0.5 rounded-full font-bold">
+                        UTR: {order.upiUtr}
+                      </span>
+                    )}
+                    {order.razorpayPaymentId && order.razorpayPaymentId !== order.upiUtr && (
+                      <span className="font-mono text-[10px] bg-blue-50 text-blue-900 border border-blue-200 px-2.5 py-0.5 rounded-full font-bold">
+                        Ref: {order.razorpayPaymentId}
+                      </span>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-craft-500">Status:</span>
-                    <select
-                      value={order.orderStatus}
-                      onChange={(e) => handleUpdateStatus(order.id, e.target.value as OrderStatus)}
-                      className="text-xs font-bold px-3 py-1.5 rounded-xl border border-craft-300 bg-craft-50 text-craft-900 focus:outline-none uppercase"
-                    >
-                      <option value="CONFIRMED">Confirmed</option>
-                      <option value="PROCESSING">Processing / Loom</option>
-                      <option value="PACKED">Packed</option>
-                      <option value="SHIPPED">Shipped</option>
-                      <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
-                      <option value="DELIVERED">Delivered</option>
-                      <option value="CANCELLED">Cancelled</option>
-                    </select>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-craft-500">Payment:</span>
+                      <select
+                        value={order.paymentStatus}
+                        onChange={(e) => handleUpdatePaymentStatus(order.id, e.target.value as any)}
+                        className={`text-xs font-bold px-2.5 py-1.5 rounded-xl border focus:outline-none uppercase ${
+                          order.paymentStatus === 'PAID'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                            : 'bg-amber-50 text-amber-800 border-amber-300'
+                        }`}
+                      >
+                        <option value="PAID">PAID</option>
+                        <option value="PENDING">PENDING</option>
+                        <option value="FAILED">FAILED</option>
+                        <option value="REFUNDED">REFUNDED</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs text-craft-500">Order:</span>
+                      <select
+                        value={order.orderStatus}
+                        onChange={(e) => handleUpdateStatus(order.id, e.target.value as OrderStatus)}
+                        className="text-xs font-bold px-3 py-1.5 rounded-xl border border-craft-300 bg-craft-50 text-craft-900 focus:outline-none uppercase"
+                      >
+                        <option value="CONFIRMED">Confirmed</option>
+                        <option value="PROCESSING">Processing / Loom</option>
+                        <option value="PACKED">Packed</option>
+                        <option value="SHIPPED">Shipped</option>
+                        <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
+                        <option value="DELIVERED">Delivered</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -290,6 +337,14 @@ export default function AdminOrdersPage() {
                         <span>Total Amount</span>
                         <span className="text-terracotta-800">{formatPrice(order.totalAmount)}</span>
                       </div>
+                      {order.upiUtr && (
+                        <div className="pt-1.5 text-[11px]">
+                          <span className="text-craft-400 block text-[10px]">UPI Reference / UTR:</span>
+                          <strong className="font-mono text-purple-900 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 block truncate">
+                            {order.upiUtr}
+                          </strong>
+                        </div>
+                      )}
                     </div>
 
                     {/* Tracking status or input */}

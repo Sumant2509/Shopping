@@ -23,6 +23,7 @@ import { useCart } from '@/lib/cart-context';
 import { formatPrice } from '@/lib/utils';
 import { lookupPincode } from '@/lib/shipping';
 import { PaymentMethod } from '@/lib/types';
+import { OnlinePaymentModal } from '@/components/OnlinePaymentModal';
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", 
@@ -53,6 +54,46 @@ export default function CheckoutPage() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Online Payment Modal & Store Settings State
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [storeUpiId, setStoreUpiId] = useState('8878112007@upi');
+  const [storeUpiName, setStoreUpiName] = useState('Home-Warrior');
+  const [isRazorpayLive, setIsRazorpayLive] = useState(false);
+  const [razorpayKeyId, setRazorpayKeyId] = useState('');
+
+  // Fetch store payment settings & prefill logged-in customer info
+  useEffect(() => {
+    fetch('/api/settings/public')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.upiId) setStoreUpiId(data.upiId);
+        if (data.upiMerchantName) setStoreUpiName(data.upiMerchantName);
+        if (typeof data.isRazorpayLive === 'boolean') setIsRazorpayLive(data.isRazorpayLive);
+        if (data.razorpayKeyId) setRazorpayKeyId(data.razorpayKeyId);
+      })
+      .catch((err) => console.error('Failed to load store settings:', err));
+
+    fetch('/api/auth/me')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.authenticated && data.customer) {
+          setName((prev) => prev || data.customer.name || '');
+          setPhone((prev) => prev || data.customer.phone || '');
+          setEmail((prev) => prev || data.customer.email || '');
+          if (data.customer.addresses && data.customer.addresses.length > 0) {
+            const addr = data.customer.addresses[0];
+            setHouseNo((prev) => prev || addr.houseNo || '');
+            setStreet((prev) => prev || addr.street || '');
+            setLandmark((prev) => prev || addr.landmark || '');
+            setCity((prev) => prev || addr.city || '');
+            if (addr.state) setState(addr.state);
+            setPincode((prev) => prev || addr.pincode || '');
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Auto-fill city/state when pincode is entered
   useEffect(() => {
@@ -104,9 +145,75 @@ export default function CheckoutPage() {
     });
   };
 
+  const handlePaymentSuccess = async (paymentData: {
+    paymentMethod: PaymentMethod;
+    upiUtr?: string;
+    upiTransactionId?: string;
+    razorpayOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpaySignature?: string;
+  }) => {
+    setShowPaymentModal(false);
+    setLoading(true);
+    setError(null);
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    const customerPayload = {
+      name: name.trim(),
+      phone: cleanPhone,
+      email: email.trim(),
+      address: {
+        houseNo: houseNo.trim(),
+        street: street.trim(),
+        landmark: landmark.trim(),
+        city: city.trim(),
+        state,
+        pincode: pincode.trim(),
+      },
+    };
+
+    try {
+      const orderRes = await fetch('/api/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customer: customerPayload,
+          items,
+          paymentMethod: paymentData.paymentMethod,
+          couponCode: coupon?.code,
+          notes: notes.trim(),
+          upiUtr: paymentData.upiUtr,
+          upiTransactionId: paymentData.upiTransactionId,
+          razorpayOrderId: paymentData.razorpayOrderId,
+          razorpayPaymentId: paymentData.razorpayPaymentId,
+          razorpaySignature: paymentData.razorpaySignature,
+        }),
+      });
+
+      const orderData = await orderRes.json();
+      if (!orderRes.ok || !orderData.success) {
+        throw new Error(orderData.error || 'Payment received, but recording order failed.');
+      }
+
+      clearCart();
+      setLoading(false);
+      router.push(`/order-success?orderId=${encodeURIComponent(orderData.order.orderNumber)}`);
+    } catch (err: unknown) {
+      console.error('Order creation error post-payment:', err);
+      const msg = err instanceof Error ? err.message : 'Error finalizing order';
+      setError(msg);
+      setLoading(false);
+    }
+  };
+
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
 
     // Basic Indian phone validation (10 digits)
     const cleanPhone = phone.replace(/\D/g, '');
@@ -115,12 +222,15 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!houseNo.trim() || !street.trim()) {
+      setError('Please enter your complete flat/house number and street address');
+      return;
+    }
+
     if (!/^\d{6}$/.test(pincode.trim())) {
       setError('Please enter a valid 6-digit Indian PIN code');
       return;
     }
-
-    setLoading(true);
 
     const customerPayload = {
       name: name.trim(),
@@ -143,6 +253,7 @@ export default function CheckoutPage() {
     // CASE 1: Cash on Delivery (COD)
     // ─────────────────────────────────────────────────────────────
     if (isCOD) {
+      setLoading(true);
       try {
         const res = await fetch('/api/orders', {
           method: 'POST',
@@ -180,152 +291,85 @@ export default function CheckoutPage() {
     // ─────────────────────────────────────────────────────────────
     // CASE 2: Online Payment (UPI, Credit/Debit Card, Net Banking)
     // ─────────────────────────────────────────────────────────────
-    try {
-      // 1. Initialize Razorpay order on server
-      const initRes = await fetch('/api/payment/create-order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: finalPayable,
-          receipt: `rcpt_${Date.now()}`,
-        }),
-      });
-
-      const initData = await initRes.json();
-      if (!initRes.ok || !initData.orderId) {
-        throw new Error(initData.error || 'Failed to initialize online payment');
-      }
-
-      const isLive = Boolean(initData.isLive);
-
-      // Simulation mode fallback (if real Razorpay API keys are not yet configured in .env.local)
-      if (!isLive && initData.orderId.startsWith('order_mock_')) {
-        const confirmSimulate = window.confirm(
-          `🔔 Razorpay Test Simulator:\n\nReal Razorpay API Keys are not yet configured in .env.local.\n\nSimulate successful ${paymentMethod} payment for ${formatPrice(finalPayable)} to verify complete order tracking?`
-        );
-
-        if (!confirmSimulate) {
-          setLoading(false);
-          return;
-        }
-
-        const mockPaymentId = `pay_mock_${Date.now()}`;
-        const mockSig = `mock_sig_${Math.random().toString(36).substring(2, 12)}`;
-
-        const orderRes = await fetch('/api/orders', {
+    // If Razorpay live keys are configured and customer chose CARD or NETBANKING
+    if (isRazorpayLive && (paymentMethod === 'CARD' || paymentMethod === 'NETBANKING')) {
+      setLoading(true);
+      try {
+        const initRes = await fetch('/api/payment/create-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            customer: customerPayload,
-            items,
-            paymentMethod,
-            couponCode: coupon?.code,
-            notes: notes.trim(),
-            razorpayOrderId: initData.orderId,
-            razorpayPaymentId: mockPaymentId,
-            razorpaySignature: mockSig,
+            amount: finalPayable,
+            receipt: `rcpt_${Date.now()}`,
           }),
         });
 
-        const orderData = await orderRes.json();
-        if (!orderRes.ok || !orderData.success) {
-          throw new Error(orderData.error || 'Order placement failed');
+        const initData = await initRes.json();
+        if (!initRes.ok || !initData.orderId) {
+          throw new Error(initData.error || 'Failed to initialize online payment');
         }
 
-        clearCart();
+        const scriptReady = await loadRazorpayScript();
+        if (!scriptReady || !(window as any).Razorpay) {
+          throw new Error('Payment gateway script failed to load. Opening direct payment modal...');
+        }
+
+        const options = {
+          key: initData.keyId,
+          amount: initData.amount,
+          currency: initData.currency || 'INR',
+          name: 'Home-Warrior',
+          description: 'Handmade Doormats Order',
+          image: '/images/hero_doormat.jpg',
+          order_id: initData.orderId,
+          prefill: {
+            name: name.trim(),
+            email: email.trim(),
+            contact: cleanPhone,
+          },
+          notes: {
+            address: `${houseNo}, ${street}, ${city}, ${state} - ${pincode}`,
+          },
+          theme: {
+            color: '#993d20',
+          },
+          modal: {
+            ondismiss: () => {
+              setLoading(false);
+            },
+          },
+          handler: async (response: {
+            razorpay_payment_id: string;
+            razorpay_order_id: string;
+            razorpay_signature: string;
+          }) => {
+            await handlePaymentSuccess({
+              paymentMethod,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+            });
+          },
+        };
+
+        const rzpInstance = new (window as any).Razorpay(options);
+        rzpInstance.on('payment.failed', function (resp: any) {
+          setError(resp.error?.description || 'Payment was declined or cancelled.');
+          setLoading(false);
+        });
+
+        rzpInstance.open();
+        return;
+      } catch (err: unknown) {
+        console.error('Razorpay gateway error, falling back to payment modal:', err);
         setLoading(false);
-        router.push(`/order-success?orderId=${encodeURIComponent(orderData.order.orderNumber)}`);
+        setShowPaymentModal(true);
         return;
       }
-
-      // 2. Ensure Razorpay Checkout SDK is ready in browser
-      const scriptReady = await loadRazorpayScript();
-      if (!scriptReady || !(window as any).Razorpay) {
-        throw new Error('Razorpay checkout window could not be opened. Please disable popup blockers and try again.');
-      }
-
-      // 3. Launch official Razorpay payment modal with UPI, Cards, NetBanking
-      const options = {
-        key: initData.keyId,
-        amount: initData.amount,
-        currency: initData.currency || 'INR',
-        name: 'Home-Warrior',
-        description: 'Handmade Doormats Order',
-        image: '/images/hero_doormat.jpg',
-        order_id: initData.orderId,
-        prefill: {
-          name: name.trim(),
-          email: email.trim(),
-          contact: cleanPhone,
-        },
-        notes: {
-          address: `${houseNo}, ${street}, ${city}, ${state} - ${pincode}`,
-        },
-        theme: {
-          color: '#993d20', // Artisanal Terracotta brand accent
-        },
-        modal: {
-          ondismiss: () => {
-            setLoading(false);
-          },
-        },
-        handler: async (response: {
-          razorpay_payment_id: string;
-          razorpay_order_id: string;
-          razorpay_signature: string;
-        }) => {
-          try {
-            setLoading(true);
-
-            // Step 4: Verify payment signature and record confirmed order
-            const orderRes = await fetch('/api/orders', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                customer: customerPayload,
-                items,
-                paymentMethod,
-                couponCode: coupon?.code,
-                notes: notes.trim(),
-                razorpayOrderId: response.razorpay_order_id,
-                razorpayPaymentId: response.razorpay_payment_id,
-                razorpaySignature: response.razorpay_signature,
-              }),
-            });
-
-            const orderData = await orderRes.json();
-            if (!orderRes.ok || !orderData.success) {
-              throw new Error(orderData.error || 'Payment succeeded, but recording order failed. Please contact support.');
-            }
-
-            clearCart();
-            setLoading(false);
-            router.push(`/order-success?orderId=${encodeURIComponent(orderData.order.orderNumber)}`);
-          } catch (err: unknown) {
-            console.error('Order creation error post-payment:', err);
-            const msg = err instanceof Error ? err.message : 'Error finalizing order';
-            setError(msg);
-            setLoading(false);
-          }
-        },
-      };
-
-      const rzpInstance = new (window as any).Razorpay(options);
-      rzpInstance.on('payment.failed', function (resp: any) {
-        setError(resp.error?.description || 'Payment was declined or cancelled.');
-        setLoading(false);
-      });
-
-      rzpInstance.open();
-    } catch (err: unknown) {
-      console.error('Online checkout error:', err);
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Something went wrong while processing your payment. Please try again.';
-      setError(message);
-      setLoading(false);
     }
+
+    // Default for UPI (and interactive demo/custom gateway):
+    setShowPaymentModal(true);
   };
 
   return (
@@ -766,6 +810,24 @@ export default function CheckoutPage() {
           </div>
         </form>
       </main>
+
+      <OnlinePaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(false);
+          setLoading(false);
+        }}
+        amount={totalAmount}
+        customerName={name}
+        customerPhone={phone}
+        customerEmail={email}
+        upiId={storeUpiId}
+        upiMerchantName={storeUpiName}
+        isRazorpayLive={isRazorpayLive}
+        razorpayKeyId={razorpayKeyId}
+        initialMethod={paymentMethod}
+        onSuccess={handlePaymentSuccess}
+      />
 
       <Footer />
     </div>

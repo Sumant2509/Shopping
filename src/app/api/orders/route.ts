@@ -30,6 +30,8 @@ export async function POST(request: Request) {
       razorpayOrderId,
       razorpayPaymentId,
       razorpaySignature,
+      upiUtr,
+      upiTransactionId,
     } = body;
 
     if (!customer || !customer.name || !customer.phone || !items || items.length === 0) {
@@ -72,24 +74,29 @@ export async function POST(request: Request) {
 
     // Verify online payment authenticity for UPI / Cards / Net Banking
     if (!isCOD) {
-      if (!razorpayOrderId || !razorpayPaymentId || !razorpaySignature) {
+      const hasUpiRef = Boolean(upiUtr || upiTransactionId);
+      const hasRazorpayTokens = Boolean(razorpayOrderId && razorpayPaymentId && razorpaySignature);
+
+      if (!hasUpiRef && !hasRazorpayTokens) {
         return NextResponse.json(
-          { error: 'Payment signature and verification tokens are required for online payment.' },
+          { error: 'Payment reference or verification token is required for online payment.' },
           { status: 400 }
         );
       }
 
-      const isValidSignature = verifyRazorpaySignature(
-        razorpayOrderId,
-        razorpayPaymentId,
-        razorpaySignature
-      );
-
-      if (!isValidSignature) {
-        return NextResponse.json(
-          { error: 'Payment verification failed. Invalid transaction signature.' },
-          { status: 400 }
+      if (hasRazorpayTokens) {
+        const isValidSignature = verifyRazorpaySignature(
+          razorpayOrderId,
+          razorpayPaymentId,
+          razorpaySignature
         );
+
+        if (!isValidSignature) {
+          return NextResponse.json(
+            { error: 'Payment verification failed. Invalid transaction signature.' },
+            { status: 400 }
+          );
+        }
       }
     }
 
@@ -108,7 +115,9 @@ export async function POST(request: Request) {
       paymentMethod,
       paymentStatus: isCOD ? 'PENDING' : 'PAID',
       razorpayOrderId: isCOD ? undefined : razorpayOrderId,
-      razorpayPaymentId: isCOD ? undefined : razorpayPaymentId,
+      razorpayPaymentId: isCOD ? undefined : (razorpayPaymentId || upiTransactionId || upiUtr),
+      upiUtr: upiUtr ? String(upiUtr).trim() : undefined,
+      upiTransactionId: upiTransactionId ? String(upiTransactionId).trim() : undefined,
       orderStatus: 'CONFIRMED',
       estimatedDeliveryDate: estimatedDelivery,
       notes,

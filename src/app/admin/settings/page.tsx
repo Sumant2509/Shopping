@@ -22,6 +22,7 @@ import {
   Smartphone,
   Mail,
   AlertCircle,
+  QrCode,
 } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { SiteSettings, AdminRole, AdminUserPublic } from '@/lib/types';
@@ -418,6 +419,60 @@ export default function AdminSettingsPage() {
                   className="w-4 h-4 rounded text-terracotta-700 focus:ring-terracotta-600"
                 />
                 <span>Enable Cash on Delivery (COD) Option</span>
+              </label>
+            </div>
+          </div>
+
+          {/* Online Payment & UPI Gateway Settings */}
+          <div className="bg-white p-6 sm:p-8 rounded-3xl border border-craft-200 shadow-sm space-y-4">
+            <h2 className="font-serif font-bold text-base text-craft-950 pb-2 border-b border-craft-200 flex items-center gap-2">
+              <QrCode className="w-4 h-4 text-terracotta-700" />
+              <span>Online Payment & UPI Gateway Settings</span>
+            </h2>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-craft-700 mb-1">
+                  Primary Store UPI ID (for QR Code & Mobile UPI Apps)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 8878112007@upi"
+                  value={settings.upiId || '8878112007@upi'}
+                  onChange={(e) => setSettings({ ...settings, upiId: e.target.value })}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 font-mono focus:outline-none focus:border-terracotta-600"
+                />
+                <p className="text-[10px] text-craft-500 mt-1">
+                  Customer scan-to-pay dynamic QR codes and intent links pay directly to this UPI address.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-craft-700 mb-1">
+                  Merchant Display Name (in Google Pay / PhonePe)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Home-Warrior"
+                  value={settings.upiMerchantName || 'Home-Warrior'}
+                  onChange={(e) => setSettings({ ...settings, upiMerchantName: e.target.value })}
+                  className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 focus:outline-none focus:border-terracotta-600"
+                />
+                <p className="text-[10px] text-craft-500 mt-1">
+                  Business name shown on customer phone when scanning UPI QR code.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-craft-100">
+              <label className="flex items-center gap-2 text-xs font-bold text-craft-800 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={settings.enableUpiPayment !== false}
+                  onChange={(e) => setSettings({ ...settings, enableUpiPayment: e.target.checked })}
+                  className="w-4 h-4 rounded text-terracotta-700 focus:ring-terracotta-600"
+                />
+                <span>Enable Instant UPI QR & Mobile App Online Checkout</span>
               </label>
             </div>
           </div>

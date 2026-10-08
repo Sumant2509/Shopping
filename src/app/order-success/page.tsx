@@ -101,6 +101,11 @@ function OrderSuccessContent() {
                 <div>
                   <span className="text-craft-500 block">Payment Method</span>
                   <strong className="text-craft-900">{order.paymentMethod} ({order.paymentStatus})</strong>
+                  {order.upiUtr && (
+                    <span className="text-[10px] text-purple-700 block font-mono">
+                      UTR: {order.upiUtr}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <span className="text-craft-500 block">Estimated Delivery</span>

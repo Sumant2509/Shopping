@@ -467,7 +467,10 @@ const INITIAL_DATA: DatabaseSchema = {
     amazonStoreUrl: "https://amazon.in",
     flipkartStoreUrl: "https://flipkart.com",
     instagramUrl: "https://instagram.com",
-    returnWindowDays: 7
+    returnWindowDays: 7,
+    upiId: "8878112007@upi",
+    upiMerchantName: "Home-Warrior",
+    enableUpiPayment: true
   },
   adminUsers: [
     {
@@ -781,6 +784,22 @@ export const db = {
   // Site Settings
   getSettings(): SiteSettings {
     const data = ensureDbExists();
+    let changed = false;
+    if (!data.siteSettings.upiId) {
+      data.siteSettings.upiId = "8878112007@upi";
+      changed = true;
+    }
+    if (!data.siteSettings.upiMerchantName) {
+      data.siteSettings.upiMerchantName = "Home-Warrior";
+      changed = true;
+    }
+    if (data.siteSettings.enableUpiPayment === undefined) {
+      data.siteSettings.enableUpiPayment = true;
+      changed = true;
+    }
+    if (changed) {
+      saveDb(data);
+    }
     return data.siteSettings;
   },
 

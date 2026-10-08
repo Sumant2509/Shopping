@@ -92,6 +92,8 @@ export interface Order {
   paymentStatus: PaymentStatus;
   razorpayOrderId?: string;
   razorpayPaymentId?: string;
+  upiUtr?: string;
+  upiTransactionId?: string;
   orderStatus: OrderStatus;
   trackingNumber?: string;
   courierPartner?: string;
@@ -144,6 +146,12 @@ export interface SiteSettings {
   flipkartStoreUrl?: string;
   instagramUrl?: string;
   returnWindowDays: number;
+  upiId?: string;
+  upiMerchantName?: string;
+  enableUpiPayment?: boolean;
+  razorpayKeyId?: string;
+  razorpayKeySecret?: string;
+  enableRazorpay?: boolean;
 }
 
 export interface Customer {
