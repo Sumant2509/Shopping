@@ -15,67 +15,21 @@ import {
   RefreshCw,
   Smartphone,
   Mail,
-  Crown,
-  Briefcase,
-  Headphones,
   Eye,
   EyeOff,
-  Copy,
-  Check,
 } from 'lucide-react';
-
-interface AdminAccountOption {
-  roleName: string;
-  username: string;
-  pass: string;
-  email: string;
-  phone: string;
-  icon: typeof Crown;
-  badgeColor: string;
-}
-
-const DEMO_ADMINS: AdminAccountOption[] = [
-  {
-    roleName: 'Super Admin',
-    username: 'admin',
-    pass: 'admin12345',
-    email: 'mandaldevanand@gmail.com',
-    phone: '+91 8878112007',
-    icon: Crown,
-    badgeColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
-  },
-  {
-    roleName: 'Store Manager',
-    username: 'manager',
-    pass: 'manager12345',
-    email: 'operations@sumantcrafts.in',
-    phone: '+91 9876543210',
-    icon: Briefcase,
-    badgeColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
-  },
-  {
-    roleName: 'Support & Dispatch',
-    username: 'support',
-    pass: 'support12345',
-    email: 'support@sumantcrafts.in',
-    phone: '+91 9826012345',
-    icon: Headphones,
-    badgeColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
-  },
-];
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<'password' | 'otp'>('password');
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin12345');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [channel, setChannel] = useState<'mobile' | 'email'>('mobile');
   const [otp, setOtp] = useState('');
   const [demoOtpNotice, setDemoOtpNotice] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
   const [verifiedUser, setVerifiedUser] = useState<{
     id: string;
     name: string;
@@ -86,19 +40,6 @@ export default function AdminLoginPage() {
     phone: string;
     email: string;
   } | null>(null);
-
-  // Quick preset loader
-  const handleSelectDemoAdmin = (admin: AdminAccountOption) => {
-    setUsername(admin.username);
-    setPassword(admin.pass);
-    setError(null);
-  };
-
-  const handleCopy = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    setTimeout(() => setCopiedField(null), 2000);
-  };
 
   // Handle Step 1: Verify Password
   const handlePasswordSubmit = async (e: React.FormEvent) => {
@@ -120,12 +61,12 @@ export default function AdminLoginPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid credentials');
+        setError(data.error || 'Invalid username or password');
       } else if (data.requiresOtp) {
         setVerifiedUser(data.user);
         setStep('otp');
         setChannel(data.channel || 'mobile');
-        setDemoOtpNotice(data.demoOtp ? `Demo 2FA OTP: ${data.demoOtp}` : null);
+        setDemoOtpNotice(data.demoOtp ? `Security 2FA OTP: ${data.demoOtp}` : null);
       }
     } catch {
       setError('Login request failed. Please check network connection.');
@@ -185,7 +126,7 @@ export default function AdminLoginPage() {
 
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid 6-digit OTP');
+        setError(data.error || 'Invalid 6-digit OTP code');
       } else {
         router.push('/admin/dashboard');
         router.refresh();
@@ -233,61 +174,12 @@ export default function AdminLoginPage() {
         </h2>
         <p className="mt-1 text-xs text-amber-300 font-medium uppercase tracking-wider">
           {step === 'password'
-            ? 'Multi-Admin Portal Access'
+            ? 'Store Management Portal'
             : '2-Factor Security Verification (Mobile & Email)'}
         </p>
       </div>
 
       <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        {/* Quick Demo Admin Selector with Clearly Visible ID & Pass */}
-        {step === 'password' && (
-          <div className="mb-4 bg-[#2b1b14] border border-[#4d3224] rounded-2xl p-3.5 shadow-md">
-            <div className="flex items-center justify-between mb-2.5">
-              <p className="text-[11px] font-bold text-amber-300 uppercase tracking-wider">
-                Select Admin User (Click to Auto-Fill):
-              </p>
-              <span className="text-[10px] text-craft-300 font-mono">3 Accounts Active</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO_ADMINS.map((adm) => {
-                const Icon = adm.icon;
-                const isSelected = username === adm.username;
-                return (
-                  <button
-                    key={adm.username}
-                    type="button"
-                    onClick={() => handleSelectDemoAdmin(adm)}
-                    className={`p-2.5 rounded-xl text-left border transition-all text-xs flex flex-col justify-between ${
-                      isSelected
-                        ? 'bg-[#3b251b] border-amber-400 text-white ring-2 ring-amber-400 shadow-md'
-                        : 'bg-[#20140e] border-[#3f291e] text-craft-300 hover:border-amber-700/60 hover:text-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <Icon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                      <span className="font-bold truncate text-[11px] text-white">
-                        {adm.roleName}
-                      </span>
-                    </div>
-
-                    <div className="space-y-0.5 pt-1 border-t border-[#4d3224] text-[10px] font-mono">
-                      <div className="flex items-center justify-between">
-                        <span className="text-craft-400">ID:</span>
-                        <span className="text-amber-300 font-bold">@{adm.username}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-craft-400">Pass:</span>
-                        <span className="text-emerald-300 font-bold">{adm.pass}</span>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         <div className="bg-[#2b1b14] py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-[#4d3224]">
           {error && (
             <div className="mb-5 bg-red-950/80 border border-red-600 text-red-200 p-3.5 rounded-xl flex items-center gap-2 text-xs">
@@ -312,14 +204,9 @@ export default function AdminLoginPage() {
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               {/* Username Input with Crisp High-Contrast Style */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider">
-                    Admin Username or Email
-                  </label>
-                  <span className="text-[10px] text-amber-400 font-mono font-bold">
-                    Active ID: {username}
-                  </span>
-                </div>
+                <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5">
+                  Admin Username or Email
+                </label>
                 <div className="relative">
                   <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-600 z-10" />
                   <input
@@ -327,7 +214,7 @@ export default function AdminLoginPage() {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter username (admin / manager / support)"
+                    placeholder="Enter your admin ID or email"
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
                     className="w-full pl-10 pr-3.5 py-3 rounded-xl border-2 border-craft-300 text-xs font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner"
                   />
@@ -366,7 +253,7 @@ export default function AdminLoginPage() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password"
+                    placeholder="Enter your password"
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
                     className="w-full pl-10 pr-12 py-3 rounded-xl border-2 border-craft-300 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner"
                   />
@@ -382,57 +269,6 @@ export default function AdminLoginPage() {
                       <Eye className="w-4 h-4 text-gray-500" />
                     )}
                   </button>
-                </div>
-              </div>
-
-              {/* Clearly Visible Credentials Card with Copy Buttons */}
-              <div className="p-3 bg-[#1d120c] rounded-2xl border border-[#4d3224] text-xs space-y-2 shadow-inner">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-amber-300 flex items-center gap-1.5 text-[11px]">
-                    <KeyRound className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Current Credentials ({showPassword ? 'Visible' : 'Hidden'}):</span>
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-[10px] text-amber-400 hover:underline font-medium"
-                  >
-                    {showPassword ? 'Click to Mask' : 'Click to Reveal'}
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                  <div className="bg-[#281810] p-2 rounded-xl border border-[#42291d] flex items-center justify-between">
-                    <div>
-                      <span className="text-craft-400 block text-[9px] uppercase tracking-wider">Username ID</span>
-                      <strong className="text-white text-xs">{username}</strong>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(username, 'id')}
-                      className="text-craft-400 hover:text-amber-300 p-1"
-                      title="Copy ID"
-                    >
-                      {copiedField === 'id' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
-
-                  <div className="bg-[#281810] p-2 rounded-xl border border-[#42291d] flex items-center justify-between">
-                    <div>
-                      <span className="text-craft-400 block text-[9px] uppercase tracking-wider">Password</span>
-                      <strong className="text-emerald-300 text-xs">
-                        {showPassword ? password : '••••••••'}
-                      </strong>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(password, 'pass')}
-                      className="text-craft-400 hover:text-amber-300 p-1"
-                      title="Copy Password"
-                    >
-                      {copiedField === 'pass' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                    </button>
-                  </div>
                 </div>
               </div>
 
@@ -482,36 +318,6 @@ export default function AdminLoginPage() {
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
-              </button>
-
-              <button
-                type="button"
-                disabled={loading}
-                onClick={async () => {
-                  setLoading(true);
-                  setError(null);
-                  try {
-                    const res = await fetch('/api/admin/login', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ username, password, step: 'direct' }),
-                    });
-                    const data = await res.json();
-                    if (data.success) {
-                      router.push('/admin/dashboard');
-                      router.refresh();
-                    } else {
-                      setError(data.error || 'Login failed');
-                    }
-                  } catch {
-                    setError('Login request failed');
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="w-full bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-3 rounded-xl text-xs flex items-center justify-center gap-2 transition-colors shadow-sm"
-              >
-                <span>🚀 Instant 1-Click Admin Access (Bypass OTP)</span>
               </button>
             </form>
           ) : (
