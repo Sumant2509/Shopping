@@ -21,6 +21,7 @@ import {
   Briefcase,
   Headphones,
   ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 
 type LoginRole = 'superadmin' | 'manager' | 'support';
@@ -404,12 +405,12 @@ export default function AdminLoginPage() {
                     onClick={() => setChannel('mobile')}
                     className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
                       channel === 'mobile'
-                        ? 'bg-amber-500/20 border-amber-400 text-amber-200 ring-1 ring-amber-400'
+                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-1 ring-emerald-400'
                         : 'bg-[#1d120c] border-[#4d3224] text-craft-400 hover:text-white'
                     }`}
                   >
-                    <Smartphone className="w-4 h-4 text-amber-400" />
-                    <span>Mobile SMS</span>
+                    <MessageSquare className="w-4 h-4 text-emerald-400" />
+                    <span>WhatsApp OTP</span>
                   </button>
                   <button
                     type="button"
@@ -467,13 +468,13 @@ export default function AdminLoginPage() {
                     onClick={() => handleSwitchChannel('mobile')}
                     className={`flex flex-col items-start p-2.5 rounded-xl border transition-all text-xs ${
                       channel === 'mobile'
-                        ? 'bg-amber-500/20 border-amber-400 text-white ring-1 ring-amber-400'
+                        ? 'bg-emerald-500/20 border-emerald-400 text-white ring-1 ring-emerald-400'
                         : 'bg-[#1d120c] border-[#4d3224] text-craft-400 hover:text-white'
                     }`}
                   >
                     <span className="flex items-center gap-1.5 font-bold mb-0.5">
-                      <Smartphone className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Mobile SMS</span>
+                      <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>WhatsApp OTP</span>
                     </span>
                     <span className="text-[10px] text-craft-300 truncate font-mono">
                       {verifiedUser?.maskedPhone || '+91 88*** ***07'}
@@ -502,19 +503,20 @@ export default function AdminLoginPage() {
 
               {/* Channel-Specific Status & Action Details */}
               {channel === 'mobile' ? (
-                <div className="bg-[#18110d] border border-emerald-500/30 rounded-2xl p-3.5 space-y-2.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-emerald-300 font-bold flex items-center gap-1.5">
-                      <Smartphone className="w-4 h-4 text-emerald-400" />
-                      <span>Mobile SMS Verification</span>
+                <div className="bg-[#0f241a] border-2 border-emerald-500/50 rounded-2xl p-4 space-y-3 shadow-xl">
+                  <div className="flex items-center justify-between">
+                    <span className="text-emerald-300 font-bold text-xs flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-emerald-400" />
+                      <span>WhatsApp OTP Gateway</span>
                     </span>
-                    <span className="text-[10px] text-emerald-300 bg-emerald-500/15 px-2 py-0.5 rounded font-bold border border-emerald-500/30">
-                      Fast2SMS Gateway
+                    <span className="text-[10px] text-emerald-200 bg-emerald-500/25 px-2.5 py-0.5 rounded-full border border-emerald-400/40 font-bold tracking-wider uppercase">
+                      Instant 1-Click
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-craft-300 leading-relaxed">
-                    A 6-digit Security OTP has been dispatched to your mobile phone number <strong className="text-white font-mono">{verifiedUser?.maskedPhone}</strong>.
+                  <p className="text-xs text-craft-200 leading-relaxed">
+                    A secure 6-digit verification code is ready for WhatsApp number{' '}
+                    <strong className="text-emerald-300 font-mono font-bold">{verifiedUser?.phone || '+91 8878112007'}</strong>.
                   </p>
 
                   {whatsappUrl && (
@@ -522,12 +524,17 @@ export default function AdminLoginPage() {
                       href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 px-3 rounded-xl shadow transition-all"
+                      className="w-full inline-flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-gray-950 font-black text-xs sm:text-sm py-3.5 px-4 rounded-xl shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider"
                     >
-                      <span>📲 Receive via WhatsApp ({verifiedUser?.phone || '+91 8878112007'})</span>
+                      <MessageSquare className="w-4 h-4 fill-current" />
+                      <span>💬 Open WhatsApp to Get OTP</span>
                       <ExternalLink className="w-3.5 h-3.5" />
                     </a>
                   )}
+
+                  <p className="text-[10px] text-craft-400 text-center">
+                    Click the green button to open WhatsApp and view your code, then enter it below.
+                  </p>
                 </div>
               ) : (
                 <div className="bg-[#18110d] border border-blue-500/30 rounded-2xl p-3.5 space-y-2">

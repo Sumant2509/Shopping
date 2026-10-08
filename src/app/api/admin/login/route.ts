@@ -76,8 +76,9 @@ export async function POST(request: Request) {
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
       const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+      const roleLabel = admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin';
       const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-        `🔐 Sumant Crafts Security: Your Admin 2FA OTP code is: ${generatedOtp}`
+        `🔐 *Sumant Crafts Admin Security 2FA*\n\nHello *${admin.name}* (${roleLabel}),\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
       )}`;
 
       console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
@@ -89,9 +90,7 @@ export async function POST(request: Request) {
           ? (emailStatus.delivered
               ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your Inbox and SPAM folder.`
               : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
-          : (smsStatus.delivered
-              ? `Real SMS OTP delivered to ${maskPhone(admin.phone)}!`
-              : `Security OTP sent to Mobile (${maskPhone(admin.phone)}).`),
+          : `Security OTP prepared for WhatsApp (${maskPhone(admin.phone)}). Click the green button to receive on WhatsApp!`,
         whatsappUrl,
         emailDelivered: emailStatus.delivered,
         smsDelivered: smsStatus.delivered,
@@ -189,8 +188,9 @@ export async function POST(request: Request) {
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
       const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
+      const roleLabel = admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin';
       const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-        `🔐 Sumant Crafts Security: Your Admin 2FA OTP code is: ${generatedOtp}`
+        `🔐 *Sumant Crafts Admin Security 2FA*\n\nHello *${admin.name}* (${roleLabel}),\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
       )}`;
 
       console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
@@ -213,9 +213,7 @@ export async function POST(request: Request) {
           ? (emailStatus.delivered
               ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your Inbox and SPAM folder.`
               : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
-          : (smsStatus.delivered
-              ? `Real SMS OTP delivered to ${maskPhone(admin.phone)}!`
-              : `Security OTP sent to Mobile (${maskPhone(admin.phone)}).`),
+          : `Security OTP prepared for WhatsApp (${maskPhone(admin.phone)}). Click the green button to receive on WhatsApp!`,
         whatsappUrl,
         emailDelivered: emailStatus.delivered,
         smsDelivered: smsStatus.delivered,
