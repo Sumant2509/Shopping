@@ -1,13 +1,16 @@
 interface SendSmsParams {
   phone: string;
   otp: string;
-  adminName: string;
+  adminName?: string;
+  customerName?: string;
+  purpose?: string;
 }
 
 export async function sendOtpSms({
   phone,
   otp,
   adminName,
+  customerName,
 }: SendSmsParams): Promise<{ delivered: boolean; error?: string; provider?: string }> {
   const cleanPhone = phone.replace(/[^0-9]/g, ''); // e.g. 918878112007 or 8878112007
   const rawNumber = cleanPhone.length === 12 && cleanPhone.startsWith('91') ? cleanPhone.slice(2) : cleanPhone;

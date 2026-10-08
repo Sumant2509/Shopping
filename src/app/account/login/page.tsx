@@ -1,9 +1,23 @@
 'use client';
 
-import React, { Suspense, useState } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Mail, Lock, Eye, EyeOff, ArrowRight, Store, AlertCircle, ShoppingBag, Phone, KeyRound, CheckCircle2, ShieldCheck, RefreshCw } from 'lucide-react';
+import {
+  Mail,
+  Lock,
+  Eye,
+  EyeOff,
+  Store,
+  AlertCircle,
+  ShoppingBag,
+  Phone,
+  KeyRound,
+  CheckCircle2,
+  RefreshCw,
+  MessageCircle,
+  ArrowLeft,
+} from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 
 function LoginForm() {
@@ -23,10 +37,21 @@ function LoginForm() {
   const [targetInput, setTargetInput] = useState('');
   const [otpStep, setOtpStep] = useState<'send' | 'verify'>('send');
   const [otpCode, setOtpCode] = useState('');
-  const [demoOtpAlert, setDemoOtpAlert] = useState<string | null>(null);
+  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+  const [maskedTarget, setMaskedTarget] = useState<string | null>(null);
+  const [resendTimer, setResendTimer] = useState<number>(0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
+  // Countdown timer for Resend OTP
+  useEffect(() => {
+    if (resendTimer > 0) {
+      const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [resendTimer]);
 
   // Handle Password Login
   const handlePasswordLogin = async (e: React.FormEvent) => {
@@ -36,7 +61,7 @@ function LoginForm() {
     const result = await login(email, password);
     setLoading(false);
     if (!result.success) {
-      setError(result.error || 'Login failed');
+      setError(result.error || 'Login failed. Please check credentials.');
     } else {
       router.push(redirect);
       router.refresh();
@@ -44,30 +69,39 @@ function LoginForm() {
   };
 
   // Handle Send OTP
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     if (!targetInput.trim()) {
-      setError('Please enter your mobile number or email');
+      setError('Please enter your 10-digit mobile number or email');
       return;
     }
+
     setLoading(true);
     setError(null);
+    setSuccessMsg(null);
 
     try {
       const res = await fetch('/api/auth/otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'send', target: targetInput }),
+        body: JSON.stringify({
+          action: 'send',
+          target: targetInput,
+          purpose: 'login',
+        }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || 'Failed to send OTP');
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Failed to dispatch verification code');
       } else {
         setOtpStep('verify');
-        setDemoOtpAlert(data.demoOtp ? `Demo OTP Code: ${data.demoOtp}` : null);
+        setWhatsappUrl(data.whatsappUrl || null);
+        setMaskedTarget(data.maskedTarget || targetInput);
+        setSuccessMsg(data.message || 'Verification code sent!');
+        setResendTimer(60); // 60 seconds countdown
       }
     } catch {
-      setError('Failed to send OTP. Please check network connection.');
+      setError('Failed to send OTP. Please check your internet connection.');
     } finally {
       setLoading(false);
     }
@@ -76,10 +110,11 @@ function LoginForm() {
   // Handle Verify OTP
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!otpCode.trim()) {
-      setError('Please enter the 6-digit OTP code');
+    if (!otpCode.trim() || otpCode.trim().length < 6) {
+      setError('Please enter the complete 6-digit verification code');
       return;
     }
+
     setLoading(true);
     setError(null);
 
@@ -90,13 +125,13 @@ function LoginForm() {
         body: JSON.stringify({
           action: 'verify',
           target: targetInput,
-          otp: otpCode,
-          type: 'customer',
+          otp: otpCode.trim(),
+          purpose: 'login',
         }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {
-        setError(data.error || 'Invalid OTP code');
+        setError(data.error || 'Invalid or expired OTP code');
       } else {
         await refreshCustomer();
         router.push(redirect);
@@ -113,45 +148,60 @@ function LoginForm() {
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-orange-50 to-craft-50 flex flex-col justify-center py-12 px-4 sm:px-6">
       {/* Header */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center mb-8">
-        <Link href="/" className="inline-flex items-center gap-2 mb-6 text-craft-600 hover:text-terracotta-700 transition-colors text-sm">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 mb-6 text-craft-600 hover:text-terracotta-700 transition-colors text-sm font-semibold"
+        >
           <Store className="w-4 h-4" />
           <span>Home-Warrior</span>
         </Link>
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-terracotta-500 to-amber-600 flex items-center justify-center mx-auto mb-4 shadow-lg text-white">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-terracotta-700 to-amber-700 flex items-center justify-center mx-auto mb-4 shadow-lg text-white">
           <ShoppingBag className="w-8 h-8" />
         </div>
-        <h1 className="font-serif font-bold text-3xl text-craft-900">Customer Portal</h1>
-        <p className="mt-2 text-craft-500 text-sm">Fast 1-Click OTP Sign In & Order Tracking</p>
+        <h1 className="font-serif font-bold text-3xl text-craft-950">Customer Login</h1>
+        <p className="mt-2 text-craft-600 text-sm">Secure OTP Sign In & Instant Order Tracking</p>
       </div>
 
       {/* Card */}
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-3xl sm:px-10 border border-craft-100">
-          
+        <div className="bg-white py-8 px-6 shadow-xl rounded-3xl sm:px-10 border border-craft-200">
           {/* Mode Switch Tabs */}
           <div className="flex rounded-2xl bg-craft-100/70 p-1 mb-6 text-xs font-bold">
             <button
               type="button"
-              onClick={() => { setMode('otp'); setError(null); }}
+              onClick={() => {
+                setMode('otp');
+                setError(null);
+                setSuccessMsg(null);
+              }}
               className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                mode === 'otp' ? 'bg-white text-terracotta-700 shadow-sm' : 'text-craft-600 hover:text-craft-900'
+                mode === 'otp'
+                  ? 'bg-white text-terracotta-700 shadow-sm'
+                  : 'text-craft-600 hover:text-craft-900'
               }`}
             >
               <KeyRound className="w-3.5 h-3.5 text-amber-600" />
-              <span>Login via Mobile/OTP</span>
+              <span>Mobile / WhatsApp OTP</span>
             </button>
             <button
               type="button"
-              onClick={() => { setMode('password'); setError(null); }}
+              onClick={() => {
+                setMode('password');
+                setError(null);
+                setSuccessMsg(null);
+              }}
               className={`flex-1 py-2.5 rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                mode === 'password' ? 'bg-white text-terracotta-700 shadow-sm' : 'text-craft-600 hover:text-craft-900'
+                mode === 'password'
+                  ? 'bg-white text-terracotta-700 shadow-sm'
+                  : 'text-craft-600 hover:text-craft-900'
               }`}
             >
               <Lock className="w-3.5 h-3.5" />
-              <span>Email & Password</span>
+              <span>Password Login</span>
             </button>
           </div>
 
+          {/* Feedback messages */}
           {error && (
             <div className="mb-5 bg-red-50 border border-red-200 text-red-700 p-3.5 rounded-xl flex items-center gap-2 text-xs">
               <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
@@ -159,13 +209,10 @@ function LoginForm() {
             </div>
           )}
 
-          {demoOtpAlert && mode === 'otp' && (
-            <div className="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl flex items-center justify-between text-xs animate-pulse">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="font-mono font-bold tracking-wider">{demoOtpAlert}</span>
-              </div>
-              <span className="text-[10px] bg-emerald-200/60 px-2 py-0.5 rounded font-medium">Master: 123456</span>
+          {successMsg && (
+            <div className="mb-5 bg-emerald-50 border border-emerald-200 text-emerald-800 p-3.5 rounded-xl flex items-center gap-2 text-xs">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+              <span>{successMsg}</span>
             </div>
           )}
 
@@ -183,25 +230,46 @@ function LoginForm() {
                       required
                       value={targetInput}
                       onChange={(e) => setTargetInput(e.target.value)}
-                      placeholder="+91 9876543210 or customer@gmail.com"
-                      className="w-full pl-10 pr-4 py-3 border border-craft-200 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
+                      placeholder="e.g. 9876543210 or yourname@gmail.com"
+                      className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
                     />
                   </div>
+                  <p className="text-[11px] text-craft-500 mt-1.5">
+                    We'll send a 6-digit security code via WhatsApp, SMS, or Email.
+                  </p>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-terracotta-600 to-amber-600 hover:from-terracotta-700 hover:to-amber-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+                  className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-warm flex items-center justify-center gap-2 transition-all"
                 >
-                  {loading ? 'Sending 6-Digit OTP...' : 'Get 6-Digit OTP Code'}
+                  {loading ? 'Sending Code...' : 'Get 6-Digit OTP Code'}
                 </button>
               </form>
             ) : (
               <form onSubmit={handleVerifyOtp} className="space-y-4">
+                {/* 1-Click WhatsApp Button if mobile */}
+                {whatsappUrl && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+                    <p className="text-[11px] font-semibold text-emerald-900">
+                      Need your code immediately? Click below:
+                    </p>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Open WhatsApp to Get Code</span>
+                    </a>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
-                    Enter 6-Digit Verification OTP
+                    Enter 6-Digit Verification Code
                   </label>
                   <div className="relative">
                     <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600" />
@@ -209,45 +277,53 @@ function LoginForm() {
                       type="text"
                       required
                       maxLength={6}
+                      autoFocus
                       value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="e.g. 123456"
-                      className="w-full pl-10 pr-4 py-3 border border-amber-300 rounded-xl text-lg font-mono text-center tracking-widest text-craft-900 focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                      placeholder="• • • • • •"
+                      className="w-full pl-10 pr-4 py-3 border-2 border-terracotta-300 rounded-xl text-xl font-mono text-center tracking-[0.4em] text-craft-900 focus:outline-none focus:border-terracotta-600"
                     />
                   </div>
                   <p className="text-[11px] text-craft-500 mt-1.5">
-                    OTP sent to <strong className="text-craft-800">{targetInput}</strong>
+                    Sent to <strong className="text-craft-800">{maskedTarget || targetInput}</strong>
                   </p>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+                  disabled={loading || otpCode.length !== 6}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all"
                 >
-                  {loading ? 'Verifying OTP...' : 'Verify OTP & Log In'}
+                  {loading ? 'Verifying...' : 'Verify OTP & Log In'}
                 </button>
 
                 <div className="flex items-center justify-between pt-2">
                   <button
                     type="button"
-                    onClick={() => setOtpStep('send')}
-                    className="text-xs text-craft-500 hover:text-craft-800"
+                    onClick={() => {
+                      setOtpStep('send');
+                      setOtpCode('');
+                      setError(null);
+                    }}
+                    className="text-xs text-craft-500 hover:text-craft-800 flex items-center gap-1 font-medium"
                   >
-                    ← Change Mobile/Email
+                    <ArrowLeft className="w-3 h-3" /> Change Number
                   </button>
+
                   <button
                     type="button"
-                    onClick={handleSendOtp}
-                    className="text-xs text-terracotta-600 hover:text-terracotta-700 flex items-center gap-1 font-bold"
+                    disabled={resendTimer > 0 || loading}
+                    onClick={() => handleSendOtp()}
+                    className="text-xs text-terracotta-700 hover:text-terracotta-800 disabled:opacity-40 flex items-center gap-1 font-bold"
                   >
-                    <RefreshCw className="w-3 h-3" /> Resend OTP
+                    <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
+                    <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend OTP'}</span>
                   </button>
                 </div>
               </form>
             )
           ) : (
-            <form onSubmit={handlePasswordLogin} className="space-y-5">
+            <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
                   Email Address
@@ -260,7 +336,7 @@ function LoginForm() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full pl-10 pr-4 py-3 border border-craft-200 rounded-xl text-sm text-craft-900 placeholder-craft-400 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
+                    className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
                   />
                 </div>
               </div>
@@ -276,8 +352,8 @@ function LoginForm() {
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Your password"
-                    className="w-full pl-10 pr-12 py-3 border border-craft-200 rounded-xl text-sm text-craft-900 placeholder-craft-400 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
+                    placeholder="••••••••"
+                    className="w-full pl-10 pr-12 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
                   />
                   <button
                     type="button"
@@ -292,18 +368,18 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-terracotta-600 to-amber-600 hover:from-terracotta-700 hover:to-amber-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+                className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-warm flex items-center justify-center gap-2 transition-all"
               >
-                {loading ? 'Signing in...' : 'Sign In'}
+                {loading ? 'Signing In...' : 'Sign In with Password'}
               </button>
             </form>
           )}
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-craft-500">
-              New customer?{' '}
-              <Link href="/account/register" className="font-bold text-terracotta-600 hover:text-terracotta-700">
-                Create an account
+          <div className="mt-6 text-center pt-4 border-t border-craft-100">
+            <p className="text-sm text-craft-600">
+              New to Home-Warrior?{' '}
+              <Link href="/account/register" className="font-bold text-terracotta-700 hover:underline">
+                Create an Account
               </Link>
             </p>
           </div>
@@ -315,7 +391,13 @@ function LoginForm() {
 
 export default function CustomerLoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-craft-500">Loading customer login...</div>}>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center text-craft-500">
+          Loading customer portal...
+        </div>
+      }
+    >
       <LoginForm />
     </Suspense>
   );

@@ -889,6 +889,19 @@ export const db = {
     return data.customers.find(c => c.email.toLowerCase() === email.toLowerCase());
   },
 
+  getCustomerByPhone(phone: string): Customer | undefined {
+    const data = ensureDbExists();
+    if (!data.customers) data.customers = [];
+    const cleanDigits = phone.replace(/[^0-9]/g, '');
+    const last10 = cleanDigits.slice(-10);
+    if (!last10) return undefined;
+    return data.customers.find(c => {
+      if (!c.phone) return false;
+      const cClean = c.phone.replace(/[^0-9]/g, '').slice(-10);
+      return cClean === last10;
+    });
+  },
+
   getCustomerById(id: string): Customer | undefined {
     const data = ensureDbExists();
     if (!data.customers) data.customers = [];
