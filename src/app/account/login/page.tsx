@@ -432,9 +432,17 @@ function LoginForm() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
-                  Password
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider">
+                    Password
+                  </label>
+                  <Link
+                    href="/account/forgot-password"
+                    className="text-xs font-semibold text-terracotta-700 hover:text-terracotta-800 hover:underline"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-400" />
                   <input
@@ -462,6 +470,16 @@ function LoginForm() {
               >
                 {loading ? 'Signing In...' : 'Sign In with Password'}
               </button>
+
+              <div className="flex items-center justify-between text-xs pt-1">
+                <span className="text-craft-500">Forgot your password?</span>
+                <Link
+                  href="/account/forgot-password"
+                  className="font-bold text-terracotta-700 hover:text-terracotta-800 hover:underline"
+                >
+                  Reset via OTP &rarr;
+                </Link>
+              </div>
             </form>
           )}
 

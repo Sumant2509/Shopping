@@ -105,7 +105,7 @@ export async function sendCustomerOtpEmail({
   toEmail: string;
   customerName?: string;
   otp: string;
-  purpose?: 'login' | 'register';
+  purpose?: 'login' | 'register' | 'forgot_password' | 'reset_password';
 }): Promise<{ delivered: boolean; error?: string }> {
   const user = (process.env.SMTP_USER || process.env.GMAIL_USER || '').trim();
   const rawPass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '').trim();
@@ -123,9 +123,16 @@ export async function sendCustomerOtpEmail({
     });
 
     const isRegister = purpose === 'register';
-    const title = isRegister ? 'Account Registration Verification' : 'Customer Account Login';
+    const isForgot = purpose === 'forgot_password' || purpose === 'reset_password';
+    const title = isRegister
+      ? 'Account Registration Verification'
+      : isForgot
+      ? 'Reset Your Account Password'
+      : 'Customer Account Login';
     const actionDesc = isRegister
       ? 'complete your new account registration at Home-Warrior'
+      : isForgot
+      ? 'reset and create a new password for your Home-Warrior account'
       : 'log in to your Home-Warrior account';
 
     const mailOptions = {

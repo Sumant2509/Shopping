@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 interface StoredOtp {
   otp: string;
   expiresAt: number;
-  purpose: 'login' | 'register';
+  purpose: 'login' | 'register' | 'forgot_password';
   name?: string;
   target: string;
   email?: string;
@@ -74,6 +74,32 @@ export async function POST(request: Request) {
         }
       }
 
+      // Customer account existence check for forgot password
+      let existingCustomer = null;
+      if (purpose === 'forgot_password') {
+        existingCustomer = isEmail
+          ? db.getCustomerByEmail(cleanTarget)
+          : db.getCustomerByPhone(cleanTarget);
+
+        if (!existingCustomer && emailTarget) {
+          existingCustomer = db.getCustomerByEmail(emailTarget);
+        }
+        if (!existingCustomer && phoneTarget) {
+          existingCustomer = db.getCustomerByPhone(phoneTarget);
+        }
+
+        if (!existingCustomer) {
+          return NextResponse.json(
+            {
+              error: isEmail
+                ? `No registered account found with email "${cleanTarget}". Please verify or create an account.`
+                : `No registered account found with mobile "${cleanTarget}". Please verify or create an account.`,
+            },
+            { status: 404 }
+          );
+        }
+      }
+
       // Generate 6-digit numeric OTP
       const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
       const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
@@ -82,7 +108,7 @@ export async function POST(request: Request) {
         otp: generatedOtp,
         expiresAt,
         purpose,
-        name: name || registrationData?.name,
+        name: existingCustomer?.name || name || registrationData?.name,
         target: cleanTarget,
         email: emailTarget,
         phone: phoneTarget,
@@ -125,15 +151,16 @@ export async function POST(request: Request) {
         const rawDigits = phoneTarget.replace(/[^0-9]/g, '');
         const phoneIntl = rawDigits.length === 10 ? `91${rawDigits}` : rawDigits;
 
-        const actionLabel = purpose === 'register' ? 'Registration' : 'Login';
-        const greetingName = name || registrationData?.name || 'Customer';
+        const actionLabel =
+          purpose === 'register' ? 'Registration' : purpose === 'forgot_password' ? 'Password Reset' : 'Login';
+        const greetingName = existingCustomer?.name || name || registrationData?.name || 'Customer';
         const whatsappMsg = `🔐 *Home-Warrior ${actionLabel} Verification Code*\n\nHello ${greetingName},\nYour 6-Digit ${actionLabel} Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`;
         whatsappUrl = `https://wa.me/${phoneIntl}?text=${encodeURIComponent(whatsappMsg)}`;
 
         sendOtpSms({
           phone: phoneTarget,
           otp: generatedOtp,
-          customerName: name,
+          customerName: greetingName,
           purpose,
         }).catch((err) => console.error('[SMS Dispatch Error]:', err));
       }
@@ -142,9 +169,13 @@ export async function POST(request: Request) {
 
       const preferredChannel = sendEmail && !sendMobile ? 'email' : sendMobile && !sendEmail ? 'mobile' : 'both';
       const responseMessage =
-        preferredChannel === 'email'
-          ? `Verification OTP sent to ${maskEmail(emailTarget || cleanTarget)}. Please check your inbox and spam folder.`
-          : `Verification code sent to ${maskPhone(phoneTarget || cleanTarget)}.`;
+        purpose === 'forgot_password'
+          ? (preferredChannel === 'email'
+              ? `Password reset code sent to ${maskEmail(emailTarget || cleanTarget)}. Please check your inbox.`
+              : `Password reset code sent to ${maskPhone(phoneTarget || cleanTarget)}.`)
+          : (preferredChannel === 'email'
+              ? `Verification OTP sent to ${maskEmail(emailTarget || cleanTarget)}. Please check your inbox and spam folder.`
+              : `Verification code sent to ${maskPhone(phoneTarget || cleanTarget)}.`);
 
       return NextResponse.json({
         success: true,
@@ -240,6 +271,73 @@ export async function POST(request: Request) {
         const response = NextResponse.json({
           success: true,
           message: 'Account successfully registered and verified!',
+          customer: {
+            id: customer.id,
+            name: customer.name,
+            email: customer.email,
+            phone: customer.phone,
+          },
+        });
+
+        response.cookies.set('customer_token', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          path: '/',
+        });
+
+        return response;
+      }
+
+      // ── Purpose C: Reset / Forgot Password ─────────────────────────────────
+      if (purpose === 'forgot_password') {
+        const customer = isEmail
+          ? db.getCustomerByEmail(cleanTarget)
+          : db.getCustomerByPhone(cleanTarget);
+
+        if (!customer) {
+          return NextResponse.json(
+            { error: 'Customer account not found for this email/mobile.' },
+            { status: 404 }
+          );
+        }
+
+        const newPassword = body.newPassword || body.password;
+        if (!newPassword) {
+          // If customer wants 2-step flow: step 1 verifies OTP, then prompts for new password
+          return NextResponse.json({
+            success: true,
+            verified: true,
+            message: 'OTP verified successfully. You can now set your new password.',
+            customer: {
+              id: customer.id,
+              name: customer.name,
+              email: customer.email,
+              phone: customer.phone,
+            },
+          });
+        }
+
+        if (typeof newPassword !== 'string' || newPassword.length < 6) {
+          return NextResponse.json(
+            { error: 'New password must be at least 6 characters long.' },
+            { status: 400 }
+          );
+        }
+
+        const passwordHash = await hashPassword(newPassword);
+        db.updateCustomer(customer.id, { passwordHash });
+
+        const token = await signCustomerToken({
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+        });
+
+        const response = NextResponse.json({
+          success: true,
+          message: 'Password successfully updated! Logging you in...',
           customer: {
             id: customer.id,
             name: customer.name,

@@ -98,6 +98,96 @@
   ],
   "orders": [
     {
+      "orderNumber": "SKM-2026-2062",
+      "customer": {
+        "name": "sumant kumar",
+        "phone": "8874984456",
+        "email": "mandaldevanand271@gmail.com",
+        "address": {
+          "houseNo": "5",
+          "street": "60 Ward 33 Udiya Mohalla Khursipar Bhilai",
+          "landmark": "",
+          "city": "Durg",
+          "state": "Chhattisgarh",
+          "pincode": "490011"
+        }
+      },
+      "items": [
+        {
+          "productId": "prod-1791488808964-q0fg",
+          "name": "Handmade Doormat",
+          "slug": "flower",
+          "price": 1,
+          "mrp": 799,
+          "quantity": 1,
+          "selectedColor": "Marigold & Terracotta",
+          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
+          "dimensions": "Diameter: 20 inches / 50.8 cm",
+          "shape": "flower"
+        }
+      ],
+      "subtotal": 1,
+      "shippingFee": 0.5,
+      "discount": 0,
+      "totalAmount": 1.5,
+      "paymentMethod": "UPI",
+      "paymentStatus": "PAID",
+      "razorpayPaymentId": "5649616516951985",
+      "upiUtr": "5649616516951985",
+      "upiTransactionId": "UPI_1791496713515",
+      "orderStatus": "CONFIRMED",
+      "estimatedDeliveryDate": "Wed, 14 Oct, 2026",
+      "notes": "",
+      "id": "ord-1791496715240",
+      "createdAt": "2026-10-08T21:58:35.240Z",
+      "updatedAt": "2026-10-08T21:58:35.240Z"
+    },
+    {
+      "orderNumber": "SKM-2026-9651",
+      "customer": {
+        "name": "Devanand Mandal",
+        "phone": "8874984456",
+        "email": "mandaldevanand271@gmail.com",
+        "address": {
+          "houseNo": "171",
+          "street": "60 Ward 33 Udiya Mohalla Khursipar Bhilai",
+          "landmark": "",
+          "city": "bhlai",
+          "state": "Chhattisgarh",
+          "pincode": "490011"
+        }
+      },
+      "items": [
+        {
+          "productId": "prod-1791488808964-q0fg",
+          "name": "Handmade Doormat",
+          "slug": "flower",
+          "price": 1,
+          "mrp": 799,
+          "quantity": 1,
+          "selectedColor": "Marigold & Terracotta",
+          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
+          "dimensions": "Diameter: 20 inches / 50.8 cm",
+          "shape": "flower"
+        }
+      ],
+      "subtotal": 1,
+      "shippingFee": 0.5,
+      "discount": 0,
+      "totalAmount": 1.5,
+      "paymentMethod": "UPI",
+      "paymentStatus": "PAID",
+      "razorpayPaymentId": "580579022781",
+      "upiUtr": "580579022781",
+      "upiTransactionId": "UPI_1791496628211",
+      "orderStatus": "CONFIRMED",
+      "estimatedDeliveryDate": "Wed, 14 Oct, 2026",
+      "notes": "",
+      "id": "ord-1791496629943",
+      "createdAt": "2026-10-08T21:57:09.943Z",
+      "updatedAt": "2026-10-08T21:57:09.943Z"
+    },
+    {
       "orderNumber": "SKM-2026-3216",
       "customer": {
         "name": "Test Online Shopper",
@@ -436,7 +526,7 @@
     "workshopAddress": "Home Warrior Handmade Doormats, Khursipar, Bhilai, Durg, Chhattisgarh - 490011, India",
     "enableCOD": true,
     "codFee": 1,
-    "freeShippingThreshold": 1,
+    "freeShippingThreshold": 4,
     "flatShippingRate": 0.5,
     "announcementText": "✨ Direct From Artisan • Free Express Shipping on orders above ₹699 • 100% Handmade",
     "bannerHeading": "Beautiful Handmade Doormats for Every Home",
@@ -528,12 +618,12 @@
       "name": "Devanand Mandal",
       "email": "mandaldevanand271@gmail.com",
       "phone": "8874984456",
-      "passwordHash": "$2a$10$oRmsaz0XlSAAm88f1ceND.ke6BZRDYf7W/jkszDsFoDeaDVjzaPt2",
+      "passwordHash": "$2a$10$q9G.ddpmagFANvUmb0WKReFa6mziLSrDcP1jvi56jh4z/UzFjwxzK",
       "addresses": [],
       "isActive": true,
       "id": "cust-1791492795774-9okhv",
       "createdAt": "2026-10-08T20:53:15.774Z",
-      "updatedAt": "2026-10-08T20:53:15.774Z"
+      "updatedAt": "2026-10-08T22:08:27.142Z"
     }
   ]
 }
