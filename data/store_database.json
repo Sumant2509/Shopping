@@ -537,7 +537,10 @@
     "returnWindowDays": 7,
     "upiId": "8878112007@ptsbi",
     "upiMerchantName": "Home-Warrior",
-    "enableUpiPayment": true
+    "enableUpiPayment": true,
+    "razorpayKeyId": "rzp_test_Tmd1XGX1dnUUwN",
+    "razorpayKeySecret": "8mAn7YQvAcxCuzjbc0BAvhXT",
+    "enableRazorpay": true
   },
   "adminUsers": [
     {
