@@ -57,7 +57,8 @@ export async function middleware(request: NextRequest) {
   // ─── Protect Customer Account Routes ─────────────────────────────────────────
   if (pathname.startsWith('/account') &&
       !pathname.startsWith('/account/login') &&
-      !pathname.startsWith('/account/register')) {
+      !pathname.startsWith('/account/register') &&
+      !pathname.startsWith('/account/forgot-password')) {
     const customerToken = request.cookies.get('customer_token')?.value;
     if (!customerToken || !(await verifyToken(customerToken, 'customer'))) {
       const loginUrl = new URL('/account/login', request.url);
@@ -75,7 +76,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // ─── Redirect already-logged-in customers away from login/register ───────────
-  if (pathname === '/account/login' || pathname === '/account/register') {
+  if (pathname === '/account/login' || pathname === '/account/register' || pathname === '/account/forgot-password') {
     const customerToken = request.cookies.get('customer_token')?.value;
     if (customerToken && (await verifyToken(customerToken, 'customer'))) {
       return NextResponse.redirect(new URL('/account/profile', request.url));

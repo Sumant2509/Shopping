@@ -143,6 +143,45 @@ export default function AdminLoginPage() {
     }
   };
 
+  // Handle Forgot Admin Password - Directly sends 2FA OTP to registered Admin Phone / Email
+  const handleForgotAdminPassword = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          channel,
+          step: 'switch_channel',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setError(data.error || 'Failed to dispatch 2FA OTP to Admin');
+      } else {
+        setVerifiedUser({
+          id: 'admin',
+          name: activeConfig.staffName,
+          username,
+          role: selectedRole,
+          maskedPhone: data.maskedTarget || '+91 88*** ***07',
+          maskedEmail: 'ma***@gmail.com',
+          phone: '+91 8878112007',
+          email: 'mandaldevanand@gmail.com',
+        });
+        setStep('otp');
+        if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
+        setDispatchNotice(data.message || `Security OTP dispatched to your Admin ${channel === 'email' ? 'Email' : 'WhatsApp'}!`);
+      }
+    } catch {
+      setError('Failed to dispatch Admin OTP. Please check connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Switch 2FA channel (Mobile SMS / Email)
   const handleSwitchChannel = async (newChannel: 'mobile' | 'email') => {
     if (loading || newChannel === channel) return;
@@ -349,23 +388,32 @@ export default function AdminLoginPage() {
                   <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider">
                     Password
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="text-[11px] text-amber-400 hover:text-amber-300 font-medium flex items-center gap-1 transition-colors"
-                  >
-                    {showPassword ? (
-                      <>
-                        <EyeOff className="w-3.5 h-3.5" />
-                        <span>Hide Password</span>
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Show Password</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleForgotAdminPassword}
+                      className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold underline transition-colors"
+                    >
+                      Forgot Password?
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-[11px] text-craft-400 hover:text-craft-200 font-medium flex items-center gap-1 transition-colors"
+                    >
+                      {showPassword ? (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span>Hide</span>
+                        </>
+                      ) : (
+                        <>
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Show</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 <div className="relative">
@@ -390,6 +438,17 @@ export default function AdminLoginPage() {
                     ) : (
                       <Eye className="w-4 h-4 text-gray-500" />
                     )}
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-craft-400 mt-1.5 px-0.5">
+                  <span>Default: <strong className="text-amber-300 font-mono">admin12345</strong></span>
+                  <button
+                    type="button"
+                    onClick={handleForgotAdminPassword}
+                    className="text-emerald-400 hover:underline font-bold text-[11px]"
+                  >
+                    Login with 2FA OTP directly &rarr;
                   </button>
                 </div>
               </div>
@@ -579,6 +638,9 @@ export default function AdminLoginPage() {
                     className="w-full pl-11 pr-3.5 py-3.5 rounded-xl border-2 border-amber-500 text-xl font-bold font-mono tracking-widest text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500/50 shadow-inner"
                   />
                 </div>
+                <p className="text-[11px] text-craft-400 mt-1.5 px-0.5">
+                  Code sent via WhatsApp / Email
+                </p>
               </div>
 
               <button

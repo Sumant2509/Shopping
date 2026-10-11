@@ -5,6 +5,11 @@ import { calculateShippingFee } from '@/lib/shipping';
 import { verifyAdminToken } from '@/lib/auth';
 import { verifyRazorpaySignature } from '@/lib/razorpay';
 import { cookies } from 'next/headers';
+import {
+  formatOrderConfirmationWhatsAppMessage,
+  createCustomerWhatsAppLink,
+  sendAutomatedWhatsAppNotification,
+} from '@/lib/whatsapp';
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
@@ -127,7 +132,21 @@ export async function POST(request: Request) {
       notes,
     });
 
-    return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
+    const whatsAppMessage = formatOrderConfirmationWhatsAppMessage(newOrder);
+    const customerWhatsAppUrl = createCustomerWhatsAppLink(newOrder.customer.phone, whatsAppMessage);
+
+    // Asynchronously dispatch automated WhatsApp notification if gateway available
+    sendAutomatedWhatsAppNotification({
+      phone: newOrder.customer.phone,
+      message: whatsAppMessage,
+    }).catch((err) => console.error('[WhatsApp Order Notify Error]:', err));
+
+    return NextResponse.json({
+      success: true,
+      order: newOrder,
+      customerWhatsAppUrl,
+      whatsAppMessage,
+    }, { status: 201 });
   } catch (error) {
     console.error('Order creation error:', error);
     return NextResponse.json({ error: 'Failed to process order' }, { status: 500 });

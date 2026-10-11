@@ -14,12 +14,18 @@ import {
   Clock, 
   Calendar,
   Sparkles,
-  ShoppingBag
+  ShoppingBag,
+  MessageCircle,
+  ExternalLink,
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { Order } from '@/lib/types';
 import { formatPrice, generateWhatsAppLink, formatDate } from '@/lib/utils';
+import {
+  formatOrderConfirmationWhatsAppMessage,
+  createCustomerWhatsAppLink,
+} from '@/lib/whatsapp';
 
 function OrderSuccessContent() {
   const searchParams = useSearchParams();
@@ -165,8 +171,46 @@ function OrderSuccessContent() {
             </div>
           )}
 
+          {/* WhatsApp Order Updates Notification Card */}
+          {order && (
+            <div className="bg-[#eaf8f0] border-2 border-[#25D366]/40 rounded-3xl p-5 sm:p-6 text-left space-y-3 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-[#25D366] text-white flex items-center justify-center shadow-md shrink-0">
+                    <MessageCircle className="w-5 h-5 fill-current" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                      <span>WhatsApp Order Confirmation & Live Tracking</span>
+                      <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-300 uppercase">
+                        Instant
+                      </span>
+                    </h3>
+                    <p className="text-xs text-gray-600">
+                      We have prepared your order receipt and tracking updates for WhatsApp (+91 {order.customer.phone}).
+                    </p>
+                  </div>
+                </div>
+
+                <a
+                  href={createCustomerWhatsAppLink(
+                    order.customer.phone,
+                    formatOrderConfirmationWhatsAppMessage(order)
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-black text-xs px-5 py-2.5 rounded-xl shadow transition-all active:scale-95 shrink-0"
+                >
+                  <MessageCircle className="w-4 h-4 fill-current" />
+                  <span>Receive Updates on WhatsApp</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-4">
+          <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-2">
             <Link
               href={`/track-order?orderId=${encodeURIComponent(order?.orderNumber || orderId || '')}`}
               className="w-full sm:w-auto bg-terracotta-700 hover:bg-terracotta-800 text-white font-bold px-7 py-3 rounded-full text-xs flex items-center justify-center gap-2 shadow-warm transition-colors"

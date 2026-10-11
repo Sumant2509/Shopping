@@ -3,6 +3,11 @@ import { db } from '@/lib/db';
 import { signCustomerToken, hashPassword } from '@/lib/auth';
 import { sendOtpSms } from '@/lib/sms';
 import { sendCustomerOtpEmail } from '@/lib/email';
+import {
+  formatOtpWhatsAppMessage,
+  createCustomerWhatsAppLink,
+  sendAutomatedWhatsAppNotification,
+} from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,8 +21,14 @@ interface StoredOtp {
   phone?: string;
 }
 
-// In-memory OTP storage with timestamp
-const otpStore = new Map<string, StoredOtp>();
+// In-memory OTP storage with timestamp (persisted on globalThis to survive HMR/reloads)
+const globalForOtp = globalThis as unknown as {
+  otpStore?: Map<string, StoredOtp>;
+};
+const otpStore = globalForOtp.otpStore || new Map<string, StoredOtp>();
+if (process.env.NODE_ENV !== 'production') {
+  globalForOtp.otpStore = otpStore;
+}
 
 function maskPhone(phone?: string): string {
   if (!phone) return '+91 **********';
@@ -55,8 +66,8 @@ export async function POST(request: Request) {
     // ACTION 1: SEND OTP (Email / WhatsApp / Mobile)
     // =========================================================================
     if (action === 'send') {
-      const emailTarget = isEmail ? cleanTarget : (body.email || registrationData?.email);
-      const phoneTarget = !isEmail ? cleanTarget : (body.phone || registrationData?.phone);
+      let emailTarget = isEmail ? cleanTarget : (body.email || registrationData?.email);
+      let phoneTarget = !isEmail ? cleanTarget : (body.phone || registrationData?.phone);
 
       // Duplicate check for registration
       if (purpose === 'register') {
@@ -74,20 +85,30 @@ export async function POST(request: Request) {
         }
       }
 
+      // Customer account lookup (for login, forgot password, or general verification)
+      let existingCustomer = isEmail
+        ? db.getCustomerByEmail(cleanTarget)
+        : db.getCustomerByPhone(cleanTarget);
+
+      if (!existingCustomer && emailTarget) {
+        existingCustomer = db.getCustomerByEmail(emailTarget);
+      }
+      if (!existingCustomer && phoneTarget) {
+        existingCustomer = db.getCustomerByPhone(phoneTarget);
+      }
+
+      // Link registered email and phone from customer record if found
+      if (existingCustomer) {
+        if (!emailTarget && existingCustomer.email) {
+          emailTarget = existingCustomer.email;
+        }
+        if (!phoneTarget && existingCustomer.phone) {
+          phoneTarget = existingCustomer.phone;
+        }
+      }
+
       // Customer account existence check for forgot password
-      let existingCustomer = null;
       if (purpose === 'forgot_password') {
-        existingCustomer = isEmail
-          ? db.getCustomerByEmail(cleanTarget)
-          : db.getCustomerByPhone(cleanTarget);
-
-        if (!existingCustomer && emailTarget) {
-          existingCustomer = db.getCustomerByEmail(emailTarget);
-        }
-        if (!existingCustomer && phoneTarget) {
-          existingCustomer = db.getCustomerByPhone(phoneTarget);
-        }
-
         if (!existingCustomer) {
           return NextResponse.json(
             {
@@ -124,8 +145,8 @@ export async function POST(request: Request) {
         if (phoneKey) otpStore.set(phoneKey, otpRecord);
       }
 
-      // Channel detection: 'email', 'mobile', or auto
-      const sendEmail = channel === 'email' || isEmail || channel === 'both';
+      // Channel detection: If customer has a registered email, dispatch to email to guarantee immediate delivery
+      const sendEmail = Boolean(emailTarget) || channel === 'email' || isEmail || channel === 'both';
       const sendMobile = channel === 'mobile' || (!isEmail && !channel) || channel === 'both';
 
       let whatsappUrl: string | undefined = undefined;
@@ -147,35 +168,53 @@ export async function POST(request: Request) {
       }
 
       // 2. Dispatch Mobile / WhatsApp OTP
+      let smsDelivered = false;
+      let smsError: string | undefined = undefined;
+
       if (sendMobile && phoneTarget) {
-        const rawDigits = phoneTarget.replace(/[^0-9]/g, '');
-        const phoneIntl = rawDigits.length === 10 ? `91${rawDigits}` : rawDigits;
-
-        const actionLabel =
-          purpose === 'register' ? 'Registration' : purpose === 'forgot_password' ? 'Password Reset' : 'Login';
         const greetingName = existingCustomer?.name || name || registrationData?.name || 'Customer';
-        const whatsappMsg = `🔐 *Home-Warrior ${actionLabel} Verification Code*\n\nHello ${greetingName},\nYour 6-Digit ${actionLabel} Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`;
-        whatsappUrl = `https://wa.me/${phoneIntl}?text=${encodeURIComponent(whatsappMsg)}`;
-
-        sendOtpSms({
-          phone: phoneTarget,
+        const whatsappMsg = formatOtpWhatsAppMessage({
           otp: generatedOtp,
           customerName: greetingName,
           purpose,
-        }).catch((err) => console.error('[SMS Dispatch Error]:', err));
+        });
+        whatsappUrl = createCustomerWhatsAppLink(phoneTarget, whatsappMsg);
+
+        // Dispatch automated WhatsApp notification
+        sendAutomatedWhatsAppNotification({
+          phone: phoneTarget,
+          message: whatsappMsg,
+        }).catch((err) => console.error('[WhatsApp OTP Notify Error]:', err));
+
+        try {
+          const smsRes = await sendOtpSms({
+            phone: phoneTarget,
+            otp: generatedOtp,
+            customerName: greetingName,
+            purpose,
+          });
+          smsDelivered = smsRes.delivered;
+          smsError = smsRes.error;
+        } catch (err: any) {
+          console.error('[SMS Dispatch Error]:', err);
+          smsError = err.message;
+        }
       }
 
-      console.log(`[Customer OTP] Generated ${generatedOtp} for ${cleanTarget} (Email: ${sendEmail}, Mobile: ${sendMobile})`);
+      console.log(`[Customer OTP] Generated ${generatedOtp} for ${cleanTarget} (Email: ${sendEmail} [Delivered: ${emailDelivered}], Mobile: ${sendMobile} [Delivered: ${smsDelivered}])`);
 
       const preferredChannel = sendEmail && !sendMobile ? 'email' : sendMobile && !sendEmail ? 'mobile' : 'both';
-      const responseMessage =
-        purpose === 'forgot_password'
-          ? (preferredChannel === 'email'
-              ? `Password reset code sent to ${maskEmail(emailTarget || cleanTarget)}. Please check your inbox.`
-              : `Password reset code sent to ${maskPhone(phoneTarget || cleanTarget)}.`)
-          : (preferredChannel === 'email'
-              ? `Verification OTP sent to ${maskEmail(emailTarget || cleanTarget)}. Please check your inbox and spam folder.`
-              : `Verification code sent to ${maskPhone(phoneTarget || cleanTarget)}.`);
+      
+      let responseMessage: string;
+      if (emailDelivered && emailTarget) {
+        responseMessage = `Verification code sent to your registered email ${maskEmail(emailTarget)}${phoneTarget ? ` and mobile ${maskPhone(phoneTarget)}` : ''}. Please check your Inbox and SPAM folder.`;
+      } else if (smsDelivered && phoneTarget) {
+        responseMessage = `Verification code sent to ${maskPhone(phoneTarget)}.`;
+      } else if (emailTarget) {
+        responseMessage = `Verification code sent to ${maskEmail(emailTarget)}. Check Inbox & Spam.`;
+      } else {
+        responseMessage = `Verification code generated for ${maskPhone(cleanTarget)}.`;
+      }
 
       return NextResponse.json({
         success: true,
@@ -183,9 +222,10 @@ export async function POST(request: Request) {
         whatsappUrl,
         channel: preferredChannel,
         emailDelivered,
+        smsDelivered,
+        smsError,
         maskedTarget: isEmail ? maskEmail(cleanTarget) : maskPhone(cleanTarget),
         maskedEmail: emailTarget ? maskEmail(emailTarget) : undefined,
-        maskedPhone: phoneTarget ? maskPhone(phoneTarget) : undefined,
         expiresInSeconds: 300,
       });
     }

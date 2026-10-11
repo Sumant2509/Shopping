@@ -45,7 +45,9 @@ function ForgotPasswordForm() {
   // Target info
   const [activeTarget, setActiveTarget] = useState('');
   const [maskedTarget, setMaskedTarget] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+  const [isEmailDelivered, setIsEmailDelivered] = useState<boolean>(false);
   const [resendTimer, setResendTimer] = useState<number>(0);
 
   // Feedback states
@@ -105,7 +107,9 @@ function ForgotPasswordForm() {
       } else {
         setActiveTarget(target);
         setMaskedTarget(data.maskedTarget || target);
+        setMaskedEmail(data.maskedEmail || null);
         setWhatsappUrl(data.whatsappUrl || null);
+        setIsEmailDelivered(Boolean(data.emailDelivered));
         setStep('reset');
         setSuccessMsg(data.message || 'Verification code sent successfully!');
         setResendTimer(60);
@@ -289,7 +293,7 @@ function ForgotPasswordForm() {
                       />
                     </div>
                     <p className="text-[11px] text-craft-500 mt-1.5">
-                      We will send your verification code via SMS and WhatsApp.
+                      We will send your verification code via WhatsApp and SMS.
                     </p>
                   </div>
                 )}
@@ -309,6 +313,19 @@ function ForgotPasswordForm() {
           {/* STEP 2: VERIFY CODE & SET NEW PASSWORD */}
           {step === 'reset' && (
             <form onSubmit={handleResetPassword} className="space-y-4">
+              {/* Email Delivery & Spam Folder Notice */}
+              {(isEmailDelivered || channel === 'email' || maskedEmail) && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                    <Mail className="w-4 h-4 text-amber-700" />
+                    <span>Check your Email Inbox & SPAM Folder:</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-900">
+                    Your 6-digit code has been delivered to registered email <strong>{maskedEmail || maskedTarget || activeTarget}</strong>. If not in your primary Inbox, please check your <strong>Spam / Junk</strong> folder!
+                  </p>
+                </div>
+              )}
+
               {whatsappUrl && (
                 <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
                   <p className="text-[11px] font-semibold text-emerald-900">

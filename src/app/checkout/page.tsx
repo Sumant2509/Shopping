@@ -298,10 +298,10 @@ export default function CheckoutPage() {
     }
 
     // ─────────────────────────────────────────────────────────────
-    // CASE 2: Online Payment (UPI, Credit/Debit Card, Net Banking)
+    // CASE 2: Online Payment via Razorpay Gateway (UPI, Cards, Net Banking)
     // ─────────────────────────────────────────────────────────────
-    // If Razorpay live keys are configured and customer chose CARD or NETBANKING
-    if (isRazorpayLive && (paymentMethod === 'CARD' || paymentMethod === 'NETBANKING')) {
+    // All online payments route directly through Razorpay Gateway
+    if (isRazorpayLive && (paymentMethod === 'UPI' || paymentMethod === 'CARD' || paymentMethod === 'NETBANKING')) {
       setLoading(true);
       try {
         const initRes = await fetch('/api/payment/create-order', {
@@ -320,7 +320,7 @@ export default function CheckoutPage() {
 
         const scriptReady = await loadRazorpayScript();
         if (!scriptReady || !(window as any).Razorpay) {
-          throw new Error('Payment gateway script failed to load. Opening direct payment modal...');
+          throw new Error('Payment gateway script failed to load. Please try again.');
         }
 
         const options = {
@@ -335,6 +335,14 @@ export default function CheckoutPage() {
             name: name.trim(),
             email: email.trim(),
             contact: cleanPhone,
+          },
+          config: {
+            display: {
+              sequence: ['upi', 'card', 'netbanking', 'wallet'],
+              preferences: {
+                show_default_blocks: true,
+              },
+            },
           },
           notes: {
             address: `${houseNo}, ${street}, ${city}, ${state} - ${pincode}`,
@@ -368,6 +376,7 @@ export default function CheckoutPage() {
         });
 
         rzpInstance.open();
+        setLoading(false);
         return;
       } catch (err: unknown) {
         console.error('Razorpay gateway error, falling back to payment modal:', err);
@@ -377,7 +386,7 @@ export default function CheckoutPage() {
       }
     }
 
-    // Default for UPI (and interactive demo/custom gateway):
+    // Default for interactive demo/custom gateway if Razorpay not active:
     setShowPaymentModal(true);
   };
 
@@ -573,13 +582,19 @@ export default function CheckoutPage() {
 
               {/* 2. Payment Method */}
               <div className="bg-white rounded-3xl p-6 sm:p-8 border border-craft-200 shadow-sm space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-craft-200">
-                  <div className="w-7 h-7 rounded-full bg-terracotta-700 text-white font-bold text-xs flex items-center justify-center">
-                    2
+                <div className="flex items-center justify-between pb-3 border-b border-craft-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-full bg-terracotta-700 text-white font-bold text-xs flex items-center justify-center">
+                      2
+                    </div>
+                    <h2 className="font-serif font-bold text-lg text-craft-950">
+                      Choose Payment Option
+                    </h2>
                   </div>
-                  <h2 className="font-serif font-bold text-lg text-craft-950">
-                    Choose Payment Option
-                  </h2>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-terracotta-700 bg-terracotta-50 px-2.5 py-1 rounded-full border border-terracotta-200">
+                    <ShieldCheck className="w-3.5 h-3.5 text-terracotta-700" />
+                    <span>Razorpay Verified</span>
+                  </div>
                 </div>
 
                 <div className="space-y-3">
@@ -607,11 +622,11 @@ export default function CheckoutPage() {
                           </span>
                         </div>
                         <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                          Fastest
+                          Fastest • Razorpay
                         </span>
                       </div>
                       <p className="text-[11px] text-craft-500 mt-1">
-                        Pay instantly via any UPI App or Scan QR Code securely.
+                        Pay instantly via Google Pay, PhonePe, Paytm, or Scan QR Code (Processed via Razorpay).
                       </p>
                     </div>
                   </label>
@@ -639,7 +654,7 @@ export default function CheckoutPage() {
                         </span>
                       </div>
                       <p className="text-[11px] text-craft-500 mt-1">
-                        All Indian & International bank cards supported with OTP verification.
+                        All Indian & International bank cards with instant OTP verification (Processed via Razorpay).
                       </p>
                     </div>
                   </label>
@@ -667,7 +682,7 @@ export default function CheckoutPage() {
                         </span>
                       </div>
                       <p className="text-[11px] text-craft-500 mt-1">
-                        Direct bank-to-bank transfer through secure gateway.
+                        Direct bank-to-bank transfer across 50+ Indian banks (Processed via Razorpay).
                       </p>
                     </div>
                   </label>
@@ -803,8 +818,8 @@ export default function CheckoutPage() {
                   </>
                 ) : (
                   <>
-                    <CreditCard className="w-5 h-5" />
-                    <span>Pay Online via {paymentMethod === 'UPI' ? 'UPI (GPay / PhonePe / Paytm)' : paymentMethod} ({formatPrice(totalAmount)})</span>
+                    <ShieldCheck className="w-5 h-5" />
+                    <span>Pay Securely via Razorpay ({formatPrice(totalAmount)})</span>
                   </>
                 )}
               </button>

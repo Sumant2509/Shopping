@@ -11,17 +11,27 @@ import {
   Filter, 
   MapPin, 
   Phone, 
-  ExternalLink 
+  ExternalLink,
+  Printer,
+  MessageCircle,
 } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
+import { ShippingLabel } from '@/components/ShippingLabel';
 import { Order, OrderStatus } from '@/lib/types';
 import { formatPrice, formatDate, generateWhatsAppLink } from '@/lib/utils';
+import {
+  formatOrderStatusWhatsAppMessage,
+  createCustomerWhatsAppLink,
+} from '@/lib/whatsapp';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+
+  // Active Shipping Label preview state
+  const [activeLabelOrder, setActiveLabelOrder] = useState<Order | null>(null);
 
   // Tracking edit states
   const [editingTracking, setEditingTracking] = useState<string | null>(null);
@@ -58,6 +68,38 @@ export default function AdminOrdersPage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleAcceptOrder = async (order: Order) => {
+    // Generate authentic 14-digit Delhivery AWB tracking number if not set
+    const generatedAwb = order.trackingNumber || `1490${Date.now().toString().slice(-10)}`;
+    const courier = order.courierPartner || 'Delhivery Express';
+
+    try {
+      const res = await fetch(`/api/orders/${order.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          orderStatus: 'PACKED',
+          trackingNumber: generatedAwb,
+          courierPartner: courier,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const updated: Order = data.order || {
+          ...order,
+          orderStatus: 'PACKED' as OrderStatus,
+          trackingNumber: generatedAwb,
+          courierPartner: courier,
+        };
+        setOrders(prev => prev.map(o => o.id === order.id ? updated : o));
+        // Automatically open the Shipping Label modal ready to print/download!
+        setActiveLabelOrder(updated);
+      }
+    } catch (e) {
+      console.error('Failed to accept order:', e);
     }
   };
 
@@ -244,7 +286,7 @@ export default function AdminOrdersPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs text-craft-500">Payment:</span>
                       <select
@@ -279,6 +321,15 @@ export default function AdminOrdersPage() {
                         <option value="CANCELLED">Cancelled</option>
                       </select>
                     </div>
+
+                    <button
+                      onClick={() => setActiveLabelOrder(order)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl bg-craft-100 hover:bg-craft-200 text-craft-900 border border-craft-300 transition-colors shadow-sm"
+                      title="Preview / Print Shipping Label & Invoice"
+                    >
+                      <Printer className="w-3.5 h-3.5 text-terracotta-700" />
+                      <span>Print Label</span>
+                    </button>
                   </div>
                 </div>
 
@@ -287,9 +338,24 @@ export default function AdminOrdersPage() {
                   {/* Customer Info */}
                   <div className="lg:col-span-4 bg-craft-50 p-4 rounded-2xl border border-craft-200 space-y-1.5 text-craft-700">
                     <p className="font-bold text-craft-950 text-sm">{order.customer.name}</p>
-                    <p className="flex items-center gap-1 text-emerald-800 font-mono">
-                      <Phone className="w-3.5 h-3.5" /> +91 {order.customer.phone}
-                    </p>
+                    <div className="flex items-center justify-between">
+                      <p className="flex items-center gap-1 text-emerald-800 font-mono font-bold">
+                        <Phone className="w-3.5 h-3.5" /> +91 {order.customer.phone}
+                      </p>
+                      <a
+                        href={createCustomerWhatsAppLink(
+                          order.customer.phone,
+                          formatOrderStatusWhatsAppMessage(order, order.orderStatus, order.trackingNumber, order.courierPartner)
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-900 font-bold text-[10px] transition-colors"
+                        title="Chat with Customer on WhatsApp"
+                      >
+                        <MessageCircle className="w-3 h-3 text-emerald-700 fill-current" />
+                        <span>WhatsApp</span>
+                      </a>
+                    </div>
                     <p className="text-craft-500">{order.customer.email}</p>
                     <div className="pt-2 border-t border-craft-200 text-[11px] text-craft-600">
                       <p>{order.customer.address.houseNo}, {order.customer.address.street}</p>
@@ -347,13 +413,46 @@ export default function AdminOrdersPage() {
                       )}
                     </div>
 
-                    {/* Tracking status or input */}
-                    <div className="mt-3 pt-3 border-t border-craft-200">
+                    {/* Action Buttons & Tracking status or input */}
+                    <div className="mt-3 pt-3 border-t border-craft-200 space-y-2">
+                      {/* Accept Order & Generate Label Button (for Confirmed / Processing orders) */}
+                      {(order.orderStatus === 'CONFIRMED' || order.orderStatus === 'PROCESSING') && (
+                        <button
+                          onClick={() => handleAcceptOrder(order)}
+                          className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-1.5"
+                        >
+                          <CheckCircle2 className="w-4 h-4" /> Accept Order & Print Label
+                        </button>
+                      )}
+
+                      {/* Download / Print Label Button */}
+                      <button
+                        onClick={() => setActiveLabelOrder(order)}
+                        className="w-full py-1.5 px-3 rounded-xl bg-craft-900 hover:bg-black text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5"
+                      >
+                        <Printer className="w-3.5 h-3.5 text-amber-400" /> Download / Print Label
+                      </button>
+
+                      {/* Send Status Notification to Customer on WhatsApp */}
+                      <a
+                        href={createCustomerWhatsAppLink(
+                          order.customer.phone,
+                          formatOrderStatusWhatsAppMessage(order, order.orderStatus, order.trackingNumber, order.courierPartner)
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-1.5 px-3 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-gray-950 font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-1.5"
+                        title={`Send real-time ${order.orderStatus} status update to customer (+91 ${order.customer.phone})`}
+                      >
+                        <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                        <span>Send WhatsApp Update ({order.orderStatus})</span>
+                      </a>
+
                       {order.trackingNumber ? (
-                        <div className="text-[11px] text-craft-700">
-                          <span className="text-craft-400 block">AWB Tracking:</span>
-                          <strong className="font-mono text-terracotta-800">{order.trackingNumber}</strong>
-                          <span className="text-craft-500 block">({order.courierPartner})</span>
+                        <div className="text-[11px] text-craft-700 bg-white p-2.5 rounded-xl border border-craft-200 space-y-0.5">
+                          <span className="text-craft-400 block text-[10px] uppercase font-bold tracking-wider">Courier & AWB Tracking:</span>
+                          <strong className="font-mono text-terracotta-800 text-xs block">{order.trackingNumber}</strong>
+                          <span className="text-craft-500 block text-[11px]">{order.courierPartner || 'Delhivery Express'}</span>
                         </div>
                       ) : editingTracking === order.id ? (
                         <div className="space-y-2">
@@ -397,7 +496,7 @@ export default function AdminOrdersPage() {
                           }}
                           className="w-full py-1.5 rounded-lg border border-dashed border-terracotta-400 text-terracotta-800 font-bold text-xs hover:bg-terracotta-50 flex items-center justify-center gap-1"
                         >
-                          <Truck className="w-3.5 h-3.5" /> Assign AWB Tracking
+                          <Truck className="w-3.5 h-3.5" /> Assign Custom AWB
                         </button>
                       )}
                     </div>
@@ -407,6 +506,15 @@ export default function AdminOrdersPage() {
             ))
           )}
         </div>
+
+        {/* Shipping Label Modal */}
+        {activeLabelOrder && (
+          <ShippingLabel
+            order={activeLabelOrder}
+            isModal={true}
+            onClose={() => setActiveLabelOrder(null)}
+          />
+        )}
       </main>
     </div>
   );

@@ -42,6 +42,8 @@ function LoginForm() {
   const [activeTarget, setActiveTarget] = useState('');
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [maskedTarget, setMaskedTarget] = useState<string | null>(null);
+  const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
+  const [isEmailDelivered, setIsEmailDelivered] = useState<boolean>(false);
   const [resendTimer, setResendTimer] = useState<number>(0);
 
   const [loading, setLoading] = useState(false);
@@ -121,6 +123,8 @@ function LoginForm() {
         setOtpStep('verify');
         setWhatsappUrl(data.whatsappUrl || null);
         setMaskedTarget(data.maskedTarget || target);
+        setMaskedEmail(data.maskedEmail || null);
+        setIsEmailDelivered(Boolean(data.emailDelivered));
         setSuccessMsg(data.message || (isEmailChannel ? 'OTP sent to your email inbox!' : 'OTP sent to your phone!'));
         setResendTimer(60);
       }
@@ -337,6 +341,19 @@ function LoginForm() {
           {/* OTP VERIFICATION VIEW (FOR BOTH EMAIL & MOBILE OTP) */}
           {otpStep === 'verify' && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
+              {/* Email Delivery & Spam Folder Warning */}
+              {(mode === 'email_otp' || isEmailDelivered || maskedEmail) && (
+                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5 shadow-sm">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
+                    <Mail className="w-4 h-4 text-amber-700" />
+                    <span>Check your Email Inbox & SPAM Folder:</span>
+                  </div>
+                  <p className="text-[11px] leading-relaxed text-amber-900">
+                    Security code was dispatched to registered email <strong>{maskedEmail || maskedTarget || activeTarget}</strong>. If not in your primary Inbox, please check your <strong>Spam / Junk</strong> folder!
+                  </p>
+                </div>
+              )}
+
               {/* WhatsApp direct delivery button (if phone OTP) */}
               {whatsappUrl && (
                 <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
@@ -483,11 +500,17 @@ function LoginForm() {
             </form>
           )}
 
-          <div className="mt-6 text-center pt-4 border-t border-craft-100">
+          <div className="mt-6 text-center pt-4 border-t border-craft-100 space-y-2">
             <p className="text-sm text-craft-600">
               New to Home-Warrior?{' '}
               <Link href="/account/register" className="font-bold text-terracotta-700 hover:underline">
                 Create an Account
+              </Link>
+            </p>
+            <p className="text-xs text-craft-500">
+              Forgot your password?{' '}
+              <Link href="/account/forgot-password" className="font-bold text-terracotta-700 hover:underline">
+                Reset Password with OTP &rarr;
               </Link>
             </p>
           </div>
