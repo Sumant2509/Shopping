@@ -32,30 +32,30 @@ export default function HomePage() {
       name: 'Flower Shaped',
       shape: 'flower',
       desc: 'Layered petal designs for entryways & living rooms',
-      image: '/images/hero_doormat.jpg',
+      image: '/images/flower_mat_real.jpg',
       badge: 'Bestseller',
     },
     {
-      name: 'Round Spiral',
-      shape: 'round',
-      desc: 'Concentric braided rings for rustic harmony',
-      image: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=600&q=80',
-      badge: 'Classic',
+      name: 'Colourful Multi-Purpose',
+      shape: 'flower',
+      desc: 'Entrance, kitchen, balcony & living room comfort',
+      image: '/images/flower_mat_lifestyle.jpg',
+      badge: 'Trending',
     },
     {
       name: 'Customize Your Own ✨',
       shape: 'custom',
       desc: 'Pick your shape, dimensions, colors & custom text',
-      image: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=600&q=80',
+      image: '/images/flower_mat_infographic.jpg',
       badge: 'Interactive Builder',
       href: '/customize',
     },
     {
-      name: 'Rectangular Doorstep',
-      shape: 'rectangle',
-      desc: 'Traditional textured handloom weave',
-      image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?auto=format&fit=crop&w=600&q=80',
-      badge: 'Practical',
+      name: 'Multi-Color Radial Wheel',
+      shape: 'starburst',
+      desc: 'Traditional woven radial petals in vibrant colorways',
+      image: '/images/starburst_doormat.png',
+      badge: 'Handmade',
     }
   ];
 
@@ -176,7 +176,7 @@ export default function HomePage() {
               <div className="lg:col-span-6 relative">
                 <div className="relative rounded-3xl overflow-hidden border-4 border-white shadow-warm-lg aspect-[4/3] sm:aspect-[16/11]">
                   <img
-                    src="/images/hero_doormat.jpg"
+                    src="/images/flower_mat_lifestyle.jpg"
                     alt="Handmade Flower Shaped Doormat at Indian Home Entrance"
                     className="w-full h-full object-cover object-center transform hover:scale-102 transition-transform duration-700"
                   />
@@ -243,7 +243,7 @@ export default function HomePage() {
               <div className="lg:col-span-5">
                 <div className="relative aspect-square rounded-2xl overflow-hidden bg-craft-100 border border-craft-200">
                   <img
-                    src="/images/hero_doormat.jpg"
+                    src="/images/flower_mat_infographic.jpg"
                     alt="Handmade Flower Doormat Signature Edition"
                     className="w-full h-full object-cover object-center"
                   />

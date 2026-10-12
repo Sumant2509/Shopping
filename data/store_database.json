@@ -1,12 +1,12 @@
 {
   "products": [
     {
-      "name": "Handmade Doormat",
+      "name": "Handmade Multi-Color Flower Petal Doormat",
       "slug": "flower",
-      "description": "washable",
-      "price": 1,
+      "description": "Premium handmade colorful multi-purpose doormat. Soft & comfortable underfoot, washable & reusable, and highly durable for daily home use. Crafted with vibrant 12 petals in an artistic floral arrangement. Ideal for home entrance, kitchen, balcony, and living room.",
+      "price": 349,
       "mrp": 799,
-      "discountPercent": 100,
+      "discountPercent": 56,
       "shape": "flower",
       "dimensions": "Diameter: 20 inches / 50.8 cm",
       "thickness": "0.6 cm / 6 mm",
@@ -14,34 +14,38 @@
       "washability": "Hand Washable & Gentle Machine Washable",
       "craftType": "Handcrafted Braided & Stitched Textile",
       "colors": [
-        "Marigold & Terracotta",
         "Multi-Color Bloom",
-        "Forest Green"
+        "Vibrant Fiesta Petals",
+        "Marigold & Terracotta"
       ],
       "images": [
-        "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
-        "/uploads/mat-Screenshot_2026-09-18_172755-1791488671652-lxdbt.png",
-        "/uploads/mat-Screenshot_2026-09-18_172709-1791488703548-fnknt.png"
+        "/images/flower_mat_infographic.jpg",
+        "/images/flower_mat_real.jpg",
+        "/images/flower_mat_lifestyle.jpg"
       ],
       "stock": 30,
       "sku": "SKM-44301",
       "category": "Floral Mats",
       "rating": 5,
-      "reviewCount": 0,
-      "isBestSeller": false,
+      "reviewCount": 24,
+      "isBestSeller": true,
       "isNewArrival": true,
       "inStock": true,
       "tags": [
         "flower",
         "handmade",
         "doormat",
-        "washable"
+        "washable",
+        "multipurpose",
+        "colorful"
       ],
       "features": [
         "Diameter: 20 inches / 50.8 cm",
         "Thickness: 0.6 cm / 6 mm",
-        "Handmade by skilled artisans",
-        "Washable"
+        "100% High Quality Handmade Design",
+        "Soft & Comfortable underfoot",
+        "Washable & Reusable fabric",
+        "Durable use for Entrance, Kitchen, Balcony & Living Room"
       ],
       "id": "prod-1791488808964-q0fg",
       "createdAt": "2026-10-08T19:46:48.964Z"
@@ -97,6 +101,50 @@
     }
   ],
   "orders": [
+    {
+      "orderNumber": "SKM-2026-4356",
+      "customer": {
+        "name": "Sumant Kumar",
+        "phone": "8878311084",
+        "email": "sumantku120@gmail.com",
+        "address": {
+          "houseNo": "1",
+          "street": "Near by komal kiran store Udiya Mohalla",
+          "landmark": "",
+          "city": "Bhilai",
+          "state": "Chhattisgarh",
+          "pincode": "490011"
+        }
+      },
+      "items": [
+        {
+          "productId": "prod-1791488808964-q0fg",
+          "name": "Handmade Doormat",
+          "slug": "flower",
+          "price": 1,
+          "mrp": 799,
+          "quantity": 1,
+          "selectedColor": "Marigold & Terracotta",
+          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
+          "dimensions": "Diameter: 20 inches / 50.8 cm",
+          "shape": "flower"
+        }
+      ],
+      "subtotal": 1,
+      "shippingFee": 0.5,
+      "discount": 0,
+      "totalAmount": 2.5,
+      "paymentMethod": "COD",
+      "paymentStatus": "PAID",
+      "estimatedDeliveryDate": "Sat, 17 Oct, 2026",
+      "notes": "",
+      "id": "ord-1791793789100",
+      "createdAt": "2026-10-12T08:29:49.100Z",
+      "updatedAt": "2026-10-12T08:44:37.152Z",
+      "trackingNumber": "12158151812118",
+      "courierPartner": "Delhivery Express",
+      "orderStatus": "DELIVERED"
+    },
     {
       "orderNumber": "SKM-2026-5076",
       "customer": {
@@ -717,6 +765,17 @@
       "id": "cust-1791492795774-9okhv",
       "createdAt": "2026-10-08T20:53:15.774Z",
       "updatedAt": "2026-10-11T15:31:57.471Z"
+    },
+    {
+      "name": "Sumant kumar",
+      "email": "sumantku120@gmail.com",
+      "phone": "8878311084",
+      "passwordHash": "$2a$10$x0jPLvoHbgf8TiMJ5.JLCOX1gITRWFVJ0xiMpxGh/AsY8s093pkMW",
+      "addresses": [],
+      "isActive": true,
+      "id": "cust-1791793712262-9pra0",
+      "createdAt": "2026-10-12T08:28:32.262Z",
+      "updatedAt": "2026-10-12T08:28:32.262Z"
     }
   ]
 }

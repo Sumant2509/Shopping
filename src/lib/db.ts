@@ -88,9 +88,9 @@ const INITIAL_DATA: DatabaseSchema = {
       craftType: "Handcrafted Braided & Stitched Textile",
       colors: ["Marigold & Terracotta", "Multicolor Bloom", "Ivory & Forest Green", "Sunset Ochre"],
       images: [
-        "/images/hero_doormat.jpg",
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80",
-        "https://images.unsplash.com/photo-1586023492125-27b2c045efd7?auto=format&fit=crop&w=900&q=80"
+        "/images/flower_mat_infographic.jpg",
+        "/images/flower_mat_real.jpg",
+        "/images/flower_mat_lifestyle.jpg"
       ],
       stock: 45,
       sku: "SKM-FLW-20-01",
