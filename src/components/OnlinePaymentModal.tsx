@@ -323,14 +323,72 @@ export function OnlinePaymentModal({
             /* ───────────────────────────────────────────────────────────── */
             /* TAB 1: UPI QR CODE & DIRECT APPS                              */
             /* ───────────────────────────────────────────────────────────── */
-            <div className="space-y-5">
-              {/* QR Code Container */}
-              <div className="bg-craft-50 p-4 sm:p-5 rounded-2xl border border-craft-200 text-center space-y-3">
+            <div className="space-y-4">
+              {/* 1-Click Mobile UPI App Buttons (PRIORITY #1 ON MOBILE) */}
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50/80 p-4 rounded-2xl border-2 border-emerald-500/40 shadow-sm space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Smartphone className="w-4 h-4 text-emerald-700 animate-pulse" />
+                    <span className="text-xs font-black text-gray-950 uppercase tracking-wider">
+                      Mobile UPI: 1-Tap me App Kholein
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-bold text-white bg-emerald-600 px-2 py-0.5 rounded-full shadow-sm">
+                    Instant App
+                  </span>
+                </div>
+
+                <p className="text-[11px] text-emerald-900 leading-tight">
+                  Neeche apne app par tap karein, seedha exact <strong>{formatPrice(amount)}</strong> ke sath app open hoga:
+                </p>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                  <a
+                    href={upiUri}
+                    className="p-3 rounded-xl bg-white border-2 border-emerald-500/50 hover:border-emerald-600 text-center transition-all shadow-sm flex flex-col items-center justify-center hover:scale-[1.02] active:scale-95 group"
+                  >
+                    <span className="text-xs font-black text-gray-900 group-hover:text-emerald-700">
+                      Google Pay
+                    </span>
+                    <span className="text-[10px] text-emerald-700 font-bold">GPay Open &rarr;</span>
+                  </a>
+                  <a
+                    href={upiUri}
+                    className="p-3 rounded-xl bg-white border-2 border-purple-500/50 hover:border-purple-600 text-center transition-all shadow-sm flex flex-col items-center justify-center hover:scale-[1.02] active:scale-95 group"
+                  >
+                    <span className="text-xs font-black text-gray-900 group-hover:text-purple-700">
+                      PhonePe
+                    </span>
+                    <span className="text-[10px] text-purple-700 font-bold">PhonePe Open &rarr;</span>
+                  </a>
+                  <a
+                    href={upiUri}
+                    className="p-3 rounded-xl bg-white border-2 border-sky-500/50 hover:border-sky-600 text-center transition-all shadow-sm flex flex-col items-center justify-center hover:scale-[1.02] active:scale-95 group"
+                  >
+                    <span className="text-xs font-black text-gray-900 group-hover:text-sky-700">
+                      Paytm
+                    </span>
+                    <span className="text-[10px] text-sky-700 font-bold">Paytm Open &rarr;</span>
+                  </a>
+                  <a
+                    href={upiUri}
+                    className="p-3 rounded-xl bg-white border-2 border-amber-500/50 hover:border-amber-600 text-center transition-all shadow-sm flex flex-col items-center justify-center hover:scale-[1.02] active:scale-95 group"
+                  >
+                    <span className="text-xs font-black text-gray-900 group-hover:text-amber-700">
+                      Any UPI
+                    </span>
+                    <span className="text-[10px] text-amber-700 font-bold">BHIM / CRED &rarr;</span>
+                  </a>
+                </div>
+              </div>
+
+              {/* QR Code Container (Secondary for Desktop / Another Device) */}
+              <div className="bg-craft-50 p-4 rounded-2xl border border-craft-200 text-center space-y-3">
                 <div className="inline-block relative p-3 bg-white rounded-2xl shadow-sm border border-craft-200">
                   <img
                     src={qrCodeUrl}
                     alt="Scan UPI QR Code to pay Home-Warrior"
-                    className="w-48 h-48 sm:w-56 sm:h-56 mx-auto object-contain rounded-lg"
+                    className="w-40 h-40 sm:w-48 sm:h-48 mx-auto object-contain rounded-lg"
                   />
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-9 h-9 rounded-full bg-terracotta-700 text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-white">
@@ -342,7 +400,7 @@ export function OnlinePaymentModal({
                 <div className="space-y-1">
                   <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-craft-900">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Scan with Any UPI App</span>
+                    <span>Ya Dusre Phone / Laptop se QR Scan karein</span>
                   </div>
                   <p className="text-[11px] text-craft-500">
                     Google Pay • PhonePe • Paytm • BHIM • CRED • Amazon Pay
@@ -372,52 +430,6 @@ export function OnlinePaymentModal({
                       )}
                     </button>
                   </div>
-                </div>
-              </div>
-
-              {/* 1-Click Mobile UPI App Buttons */}
-              <div>
-                <p className="text-xs font-bold text-craft-700 mb-2 flex items-center gap-1.5">
-                  <Smartphone className="w-3.5 h-3.5 text-terracotta-700" />
-                  <span>Paying on Mobile? Open Your UPI App:</span>
-                </p>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  <a
-                    href={upiUri}
-                    className="p-2.5 rounded-xl border border-craft-200 hover:border-emerald-500 hover:bg-emerald-50 text-center transition-all group flex flex-col items-center justify-center"
-                  >
-                    <span className="text-xs font-bold text-craft-900 group-hover:text-emerald-800">
-                      Google Pay
-                    </span>
-                    <span className="text-[10px] text-craft-500">GPay Direct</span>
-                  </a>
-                  <a
-                    href={upiUri}
-                    className="p-2.5 rounded-xl border border-craft-200 hover:border-purple-500 hover:bg-purple-50 text-center transition-all group flex flex-col items-center justify-center"
-                  >
-                    <span className="text-xs font-bold text-craft-900 group-hover:text-purple-800">
-                      PhonePe
-                    </span>
-                    <span className="text-[10px] text-craft-500">1-Tap Pay</span>
-                  </a>
-                  <a
-                    href={upiUri}
-                    className="p-2.5 rounded-xl border border-craft-200 hover:border-sky-500 hover:bg-sky-50 text-center transition-all group flex flex-col items-center justify-center"
-                  >
-                    <span className="text-xs font-bold text-craft-900 group-hover:text-sky-800">
-                      Paytm
-                    </span>
-                    <span className="text-[10px] text-craft-500">Paytm UPI</span>
-                  </a>
-                  <a
-                    href={upiUri}
-                    className="p-2.5 rounded-xl border border-craft-200 hover:border-terracotta-500 hover:bg-terracotta-50 text-center transition-all group flex flex-col items-center justify-center"
-                  >
-                    <span className="text-xs font-bold text-craft-900 group-hover:text-terracotta-800">
-                      BHIM / Other
-                    </span>
-                    <span className="text-[10px] text-craft-500">Any App</span>
-                  </a>
                 </div>
               </div>
 

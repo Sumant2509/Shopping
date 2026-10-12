@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { verifyPassword, signAdminToken } from '@/lib/auth';
 import { sendOtpEmail } from '@/lib/email';
 import { sendOtpSms } from '@/lib/sms';
+import { sendAutomatedWhatsAppNotification, formatOtpWhatsAppMessage } from '@/lib/whatsapp';
 
 // In-memory Admin OTP store: username -> { otp, channel, expiresAt, adminId }
 const adminOtpStore = new Map<
@@ -72,6 +73,13 @@ export async function POST(request: Request) {
           otp: generatedOtp,
           adminName: admin.name,
         });
+
+        // Dispatch automated WhatsApp notification
+        const waMsg = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello *${admin.name}*,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.\n\n*Home-Warrior Handcrafted Textiles*`;
+        sendAutomatedWhatsAppNotification({
+          phone: admin.phone,
+          message: waMsg,
+        }).catch((err) => console.error('[WhatsApp Admin OTP Notify Error]:', err));
       }
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
@@ -183,6 +191,13 @@ export async function POST(request: Request) {
           otp: generatedOtp,
           adminName: admin.name,
         });
+
+        // Dispatch automated WhatsApp notification
+        const waMsg = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello *${admin.name}*,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.\n\n*Home-Warrior Handcrafted Textiles*`;
+        sendAutomatedWhatsAppNotification({
+          phone: admin.phone,
+          message: waMsg,
+        }).catch((err) => console.error('[WhatsApp Admin OTP Notify Error]:', err));
       }
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');

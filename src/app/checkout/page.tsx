@@ -15,7 +15,8 @@ import {
   ArrowLeft,
   Lock,
   Sparkles,
-  Phone
+  Phone,
+  Smartphone
 } from 'lucide-react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -215,6 +216,35 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleDirectUpiOpen = (appName?: string) => {
+    setPaymentMethod('UPI');
+    setError(null);
+
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!name.trim()) {
+      setError('Please fill your delivery Name above before opening UPI');
+      return;
+    }
+    if (cleanPhone.length < 10) {
+      setError('Please enter your 10-digit mobile number above');
+      return;
+    }
+    if (!houseNo.trim() || !street.trim() || !/^\d{6}$/.test(pincode.trim())) {
+      setError('Please complete your delivery address above');
+      return;
+    }
+
+    const upiTxnRef = `HW${Date.now().toString().slice(-8)}`;
+    const upiUri = `upi://pay?pa=${encodeURIComponent(storeUpiId)}&pn=${encodeURIComponent(
+      storeUpiName
+    )}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent(`Home-Warrior Order ${upiTxnRef}`)}`;
+
+    if (typeof window !== 'undefined') {
+      window.location.href = upiUri;
+    }
+    setShowPaymentModal(true);
+  };
+
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -335,6 +365,7 @@ export default function CheckoutPage() {
             name: name.trim(),
             email: email.trim(),
             contact: cleanPhone,
+            method: paymentMethod === 'UPI' ? 'upi' : undefined,
           },
           config: {
             display: {
@@ -599,37 +630,91 @@ export default function CheckoutPage() {
 
                 <div className="space-y-3">
                   {/* UPI */}
-                  <label
-                    className={`flex items-start gap-3.5 p-4 rounded-2xl border cursor-pointer transition-all ${
+                  <div
+                    className={`p-4 rounded-2xl border transition-all ${
                       paymentMethod === 'UPI'
                         ? 'border-terracotta-600 bg-terracotta-50/70 ring-2 ring-terracotta-400'
                         : 'border-craft-200 hover:border-craft-300 bg-white'
                     }`}
                   >
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === 'UPI'}
-                      onChange={() => setPaymentMethod('UPI')}
-                      className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <QrCode className="w-4 h-4 text-terracotta-700" />
-                          <span className="font-bold text-xs sm:text-sm text-craft-900">
-                            UPI (Google Pay / PhonePe / Paytm / BHIM)
+                    <label className="flex items-start gap-3.5 cursor-pointer">
+                      <input
+                        type="radio"
+                        name="payment"
+                        checked={paymentMethod === 'UPI'}
+                        onChange={() => setPaymentMethod('UPI')}
+                        className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
+                      />
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <QrCode className="w-4 h-4 text-terracotta-700" />
+                            <span className="font-bold text-xs sm:text-sm text-craft-900">
+                              UPI (Google Pay / PhonePe / Paytm / BHIM)
+                            </span>
+                          </div>
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                            Fastest • Instant App Open
                           </span>
                         </div>
-                        <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                          Fastest • Razorpay
-                        </span>
+                        <p className="text-[11px] text-craft-500 mt-1">
+                          PhonePe, Google Pay, ya Paytm seedha aapke phone me khulega.
+                        </p>
                       </div>
-                      <p className="text-[11px] text-craft-500 mt-1">
-                        Pay instantly via Google Pay, PhonePe, Paytm, or Scan QR Code (Processed via Razorpay).
-                      </p>
-                    </div>
-                  </label>
+                    </label>
+
+                    {paymentMethod === 'UPI' && (
+                      <div className="mt-3 pt-3 border-t border-terracotta-200/80 space-y-2">
+                        <div className="flex items-center justify-between text-[11px] font-bold text-craft-800">
+                          <span className="flex items-center gap-1.5 text-terracotta-800">
+                            <Smartphone className="w-3.5 h-3.5 text-terracotta-700" />
+                            <span>1-Tap UPI: Seedha App Kholein</span>
+                          </span>
+                          <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
+                            Direct App Pay
+                          </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => handleDirectUpiOpen('gpay')}
+                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-emerald-500/40 bg-white hover:bg-emerald-50 hover:border-emerald-600 text-center transition-all shadow-sm active:scale-95 group"
+                          >
+                            <span className="text-xs font-bold text-gray-900 group-hover:text-emerald-700">Google Pay</span>
+                            <span className="text-[10px] text-emerald-700 font-bold">GPay Open &rarr;</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDirectUpiOpen('phonepe')}
+                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-purple-500/40 bg-white hover:bg-purple-50 hover:border-purple-600 text-center transition-all shadow-sm active:scale-95 group"
+                          >
+                            <span className="text-xs font-bold text-gray-900 group-hover:text-purple-700">PhonePe</span>
+                            <span className="text-[10px] text-purple-700 font-bold">PhonePe Open &rarr;</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDirectUpiOpen('paytm')}
+                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-sky-500/40 bg-white hover:bg-sky-50 hover:border-sky-600 text-center transition-all shadow-sm active:scale-95 group"
+                          >
+                            <span className="text-xs font-bold text-gray-900 group-hover:text-sky-700">Paytm</span>
+                            <span className="text-[10px] text-sky-700 font-bold">Paytm Open &rarr;</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDirectUpiOpen('any')}
+                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-amber-500/40 bg-white hover:bg-amber-50 hover:border-amber-600 text-center transition-all shadow-sm active:scale-95 group"
+                          >
+                            <span className="text-xs font-bold text-gray-900 group-hover:text-amber-700">Any UPI</span>
+                            <span className="text-[10px] text-amber-700 font-bold">BHIM / CRED &rarr;</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
 
                   {/* Cards */}
                   <label
