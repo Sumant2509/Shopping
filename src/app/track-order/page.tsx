@@ -109,7 +109,7 @@ function TrackOrderContent() {
     }
   };
 
-  const currentStep = order ? getStepIndex(order.orderStatus) : 0;
+  const currentStep = order ? getStepIndex((order.orderStatus || (order as any).status || 'CONFIRMED') as OrderStatus) : 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-craft-50">
@@ -217,10 +217,10 @@ function TrackOrderContent() {
                   {order.orderNumber}
                 </span>
                 <h2 className="font-serif font-bold text-lg sm:text-xl text-craft-950 mt-2">
-                  Order Status: <span className="text-terracotta-800 uppercase">{order.orderStatus.replace(/_/g, ' ')}</span>
+                  Order Status: <span className="text-terracotta-800 uppercase">{((order.orderStatus || (order as any).status || 'CONFIRMED') as string).replace(/_/g, ' ')}</span>
                 </h2>
                 <p className="text-xs text-craft-500 mt-0.5">
-                  Placed on {formatDate(order.createdAt)} • Recipient: <strong>{order.customer.name}</strong>
+                  Placed on {formatDate(order.createdAt)} • Recipient: <strong>{order.customer?.name || 'Customer'}</strong>
                 </p>
               </div>
 
@@ -292,10 +292,10 @@ function TrackOrderContent() {
             {/* Items Summary in this shipment */}
             <div className="pt-6 border-t border-craft-200">
               <h3 className="text-xs font-bold uppercase tracking-wider text-craft-700 mb-3">
-                Items in this Shipment ({order.items.length})
+                Items in this Shipment ({order.items?.length || 0})
               </h3>
               <div className="space-y-2">
-                {order.items.map((it, idx) => (
+                {(order.items || []).map((it, idx) => (
                   <div key={idx} className="flex items-center gap-3 bg-craft-50 p-2.5 rounded-xl border border-craft-200 text-xs">
                     <img
                       src={it.image || '/images/hero_doormat.jpg'}
