@@ -455,7 +455,7 @@ const INITIAL_DATA: DatabaseSchema = {
     tagline: "Beautiful Handmade Doormats for Every Home",
     whatsappNumber: "+91 8878112007",
     supportPhone: "+91 8878112007",
-    supportEmail: "mandaldevanand@gmail.com",
+    supportEmail: "sumantku2509@zohomail.in",
     workshopAddress: "Home Warrior Handmade Doormats, Khursipar, Bhilai, Durg, Chhattisgarh - 490011, India",
     enableCOD: true,
     codFee: 40,
@@ -477,7 +477,7 @@ const INITIAL_DATA: DatabaseSchema = {
       id: "admin-1",
       name: "Sumant Kumar (Super Admin)",
       username: "admin",
-      email: "mandaldevanand@gmail.com",
+      email: "sumantku2509@zohomail.in",
       phone: "+91 8878112007",
       role: "superadmin",
       // bcrypt hash for "admin12345"
@@ -893,7 +893,7 @@ export const db = {
     data.adminUsers[0] = {
       ...data.adminUsers[0],
       username: newUsername,
-      email: newEmail || data.adminUsers[0]?.email || 'mandaldevanand@gmail.com',
+      email: newEmail || data.adminUsers[0]?.email || 'sumantku2509@zohomail.in',
       passwordHash: newPasswordHash,
     };
     saveDb(data);

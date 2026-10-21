@@ -10,10 +10,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const admin = db.getAdminUser('admin') || db.getAdminUser('mandaldevanand@gmail.com');
+    const admin = db.getAdminUser('admin') || db.getAdminUser('sumantku2509@zohomail.in');
     return NextResponse.json({
       username: admin?.username || 'admin',
-      email: admin?.email || 'mandaldevanand@gmail.com',
+      email: admin?.email || 'sumantku2509@zohomail.in',
     });
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch admin credentials' }, { status: 500 });

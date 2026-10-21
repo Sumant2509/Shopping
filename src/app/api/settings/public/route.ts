@@ -16,7 +16,7 @@ export async function GET() {
       flatShippingRate: settings.flatShippingRate ?? 60,
       whatsappNumber: settings.whatsappNumber || '+91 8878112007',
       supportPhone: settings.supportPhone || '+91 8878112007',
-      supportEmail: settings.supportEmail || 'mandaldevanand@gmail.com',
+      supportEmail: settings.supportEmail || 'sumantku2509@zohomail.in',
       isRazorpayLive: isRazorpayConfigured(),
       razorpayKeyId: getRazorpayKeyId(),
     });
@@ -34,7 +34,7 @@ export async function GET() {
         flatShippingRate: 60,
         whatsappNumber: '+91 8878112007',
         supportPhone: '+91 8878112007',
-        supportEmail: 'mandaldevanand@gmail.com',
+        supportEmail: 'sumantku2509@zohomail.in',
         isRazorpayLive: false,
         razorpayKeyId: 'rzp_test_demo12345',
       },

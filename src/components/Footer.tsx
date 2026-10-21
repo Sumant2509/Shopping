@@ -90,11 +90,11 @@ export function Footer() {
               <span>WhatsApp / Call: +91 8878112007</span>
             </a>
             <a 
-              href="mailto:mandaldevanand@gmail.com" 
+              href="mailto:sumantku2509@zohomail.in" 
               className="flex items-center gap-2.5 hover:text-amber-300 transition-colors"
             >
               <Mail className="w-4 h-4 text-terracotta-400" />
-              <span>mandaldevanand@gmail.com</span>
+              <span>sumantku2509@zohomail.in</span>
             </a>
             <div className="flex items-start gap-2.5">
               <MapPin className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />

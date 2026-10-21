@@ -74,8 +74,8 @@ export default function ContactPage() {
                 <Mail className="w-5 h-5 text-terracotta-700 shrink-0 mt-0.5" />
                 <div>
                   <h3 className="font-bold text-craft-900">Email Address</h3>
-                  <a href="mailto:mandaldevanand@gmail.com" className="text-craft-600 hover:underline">
-                    mandaldevanand@gmail.com
+                  <a href="mailto:sumantku2509@zohomail.in" className="text-craft-600 hover:underline">
+                    sumantku2509@zohomail.in
                   </a>
                   <p className="text-[11px] text-craft-400 mt-0.5">Response within 24 business hours</p>
                 </div>

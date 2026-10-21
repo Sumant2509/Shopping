@@ -66,7 +66,7 @@ export default function ShippingPolicyPage() {
                 5. Damaged Parcel on Delivery
               </h2>
               <p>
-                If the outer shipping parcel arrives visibly damaged or tampered with, please take a quick photo and contact us immediately on WhatsApp at <strong>+91 8878112007</strong> or email <strong>mandaldevanand@gmail.com</strong>. We will arrange an immediate free replacement.
+                If the outer shipping parcel arrives visibly damaged or tampered with, please take a quick photo and contact us immediately on WhatsApp at <strong>+91 8878112007</strong> or email <strong>sumantku2509@zohomail.in</strong>. We will arrange an immediate free replacement.
               </p>
             </section>
           </div>

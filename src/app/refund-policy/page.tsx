@@ -56,7 +56,7 @@ export default function RefundPolicyPage() {
                 4. How to Initiate a Return
               </h2>
               <p>
-                Simply message us on WhatsApp at <strong>+91 8878112007</strong> or email <strong>mandaldevanand@gmail.com</strong> with your Order ID. Our support team will assist you within 24 hours.
+                Simply message us on WhatsApp at <strong>+91 8878112007</strong> or email <strong>sumantku2509@zohomail.in</strong> with your Order ID. Our support team will assist you within 24 hours.
               </p>
             </section>
           </div>

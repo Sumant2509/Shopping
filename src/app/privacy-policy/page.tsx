@@ -52,7 +52,7 @@ export default function PrivacyPolicyPage() {
                 4. Contact Us Regarding Your Privacy
               </h2>
               <p>
-                If you have questions regarding your personal information, please contact us at <strong>mandaldevanand@gmail.com</strong>.
+                If you have questions regarding your personal information, please contact us at <strong>sumantku2509@zohomail.in</strong>.
               </p>
             </section>
           </div>

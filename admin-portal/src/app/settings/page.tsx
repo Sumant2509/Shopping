@@ -12,7 +12,7 @@ export default function AdminSettingsPage() {
   const [form, setForm] = useState<SiteSettings>({
     storeName: 'Home-Warrior',
     phone: '+91 8878112007',
-    email: 'mandaldevanand@gmail.com',
+    email: 'sumantku2509@zohomail.in',
     whatsappNumber: '+91 8878112007',
     address: 'Home Warrior Handmade Doormats, Khursipar, Bhilai, Durg, Chhattisgarh - 490011, India',
     freeShippingThreshold: 699,

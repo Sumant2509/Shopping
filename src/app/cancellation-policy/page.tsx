@@ -25,7 +25,7 @@ export default function CancellationPolicyPage() {
                 1. Cancellation Before Dispatch
               </h2>
               <p>
-                You can cancel your order free of charge at any time before it is dispatched from our workshop (typically within 24 hours of placing the order). To cancel, message us on WhatsApp at <strong>+91 8878112007</strong> or email <strong>mandaldevanand@gmail.com</strong> with your Order Number.
+                You can cancel your order free of charge at any time before it is dispatched from our workshop (typically within 24 hours of placing the order). To cancel, message us on WhatsApp at <strong>+91 8878112007</strong> or email <strong>sumantku2509@zohomail.in</strong> with your Order Number.
               </p>
             </section>
 

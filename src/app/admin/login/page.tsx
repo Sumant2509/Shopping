@@ -167,9 +167,9 @@ export default function AdminLoginPage() {
           username,
           role: selectedRole,
           maskedPhone: data.maskedTarget || '+91 88*** ***07',
-          maskedEmail: 'ma***@gmail.com',
+          maskedEmail: 'su***@zohomail.in',
           phone: '+91 8878112007',
-          email: 'mandaldevanand@gmail.com',
+          email: 'sumantku2509@zohomail.in',
         });
         setStep('otp');
         if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
@@ -374,7 +374,7 @@ export default function AdminLoginPage() {
                         ? 'manager (or operations@sumantcrafts.in)'
                         : selectedRole === 'support'
                         ? 'support (or support@sumantcrafts.in)'
-                        : 'admin (or mandaldevanand@gmail.com)'
+                        : 'admin (or sumantku2509@zohomail.in)'
                     }
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
                     className="w-full pl-10 pr-3.5 py-3 rounded-xl border-2 border-craft-300 text-xs font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner font-mono"
