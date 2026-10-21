@@ -147,10 +147,17 @@ export async function sendCustomerOtpEmail({
       ? 'reset and create a new password for your Home-Warrior account'
       : 'log in to your Home-Warrior account';
 
+    const isOwner = toEmail.trim().toLowerCase() === user.trim().toLowerCase();
     const mailOptions = {
       from: `"Home-Warrior" <${user}>`,
       to: toEmail.trim(),
+      ...(isOwner ? {} : { bcc: user.trim() }),
       subject: `🔐 Home-Warrior Verification Code: ${otp}`,
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        Importance: 'high',
+      },
       text: `Hello ${customerName || 'Customer'},\n\nYour 6-Digit Home-Warrior Verification Code is: ${otp}\n\nUse this code to ${actionDesc}. This code expires in 5 minutes.\n\nThank you,\nHome-Warrior Team`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 520px; margin: 0 auto; background-color: #faf8f5; border: 1px solid #e9ddcb; border-radius: 16px; padding: 28px; color: #2a1c15;">
