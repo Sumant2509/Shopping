@@ -10,6 +10,7 @@ import {
   createCustomerWhatsAppLink,
   sendAutomatedWhatsAppNotification,
 } from '@/lib/whatsapp';
+import { syncOrderToZoho } from '@/lib/zoho';
 
 export async function GET(request: Request) {
   const cookieStore = cookies();
@@ -140,6 +141,9 @@ export async function POST(request: Request) {
       phone: newOrder.customer.phone,
       message: whatsAppMessage,
     }).catch((err) => console.error('[WhatsApp Order Notify Error]:', err));
+
+    // Asynchronously sync Order & GST Invoice to Zoho Books / Inventory if configured
+    syncOrderToZoho(newOrder).catch((err) => console.error('[Zoho Books Sync Error]:', err));
 
     return NextResponse.json({
       success: true,

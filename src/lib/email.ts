@@ -7,20 +7,41 @@ interface SendOtpEmailParams {
   roleTitle?: string;
 }
 
+function createEmailTransporter(user: string, pass: string) {
+  const isZoho = user.toLowerCase().includes('zoho') || Boolean(process.env.SMTP_HOST?.toLowerCase().includes('zoho'));
+  const isIndia = user.toLowerCase().endsWith('.in') || Boolean(process.env.SMTP_HOST?.toLowerCase().endsWith('.in'));
+  const host = process.env.SMTP_HOST || (isZoho ? (isIndia ? 'smtp.zoho.in' : 'smtp.zoho.com') : undefined);
+  const port = Number(process.env.SMTP_PORT) || (isZoho ? 465 : 587);
+
+  if (host) {
+    return nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: { user, pass },
+    });
+  }
+
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: { user, pass },
+  });
+}
+
 export async function sendOtpEmail({
   toEmail,
   adminName,
   otp,
   roleTitle = 'Admin Portal Access',
 }: SendOtpEmailParams): Promise<{ delivered: boolean; error?: string }> {
-  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || '').trim();
-  const rawPass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '').trim();
+  const user = (process.env.ZOHO_MAIL_USER || process.env.SMTP_USER || process.env.GMAIL_USER || '').trim();
+  const rawPass = (process.env.ZOHO_MAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '').trim();
   const cleanPass = rawPass.replace(/\s+/g, '');
 
   // If no SMTP configured, log warning and return
   if (!user || !cleanPass) {
     console.warn(
-      `[Email Gateway] Real email not sent: SMTP_USER/GMAIL_USER or SMTP_PASS/GMAIL_APP_PASSWORD is not set in .env.local. OTP: ${otp} for ${toEmail}`
+      `[Email Gateway] Real email not sent: ZOHO_MAIL_USER/SMTP_USER/GMAIL_USER or password is not set in .env.local. OTP: ${otp} for ${toEmail}`
     );
     return {
       delivered: false,
@@ -29,13 +50,7 @@ export async function sendOtpEmail({
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user,
-        pass: cleanPass,
-      },
-    });
+    const transporter = createEmailTransporter(user, cleanPass);
 
     const recipients = Array.from(new Set([toEmail.trim(), user.trim()].filter(Boolean)));
 
@@ -107,8 +122,8 @@ export async function sendCustomerOtpEmail({
   otp: string;
   purpose?: 'login' | 'register' | 'forgot_password' | 'reset_password';
 }): Promise<{ delivered: boolean; error?: string }> {
-  const user = (process.env.SMTP_USER || process.env.GMAIL_USER || '').trim();
-  const rawPass = (process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '').trim();
+  const user = (process.env.ZOHO_MAIL_USER || process.env.SMTP_USER || process.env.GMAIL_USER || '').trim();
+  const rawPass = (process.env.ZOHO_MAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '').trim();
   const cleanPass = rawPass.replace(/\s+/g, '');
 
   if (!user || !cleanPass) {
@@ -117,10 +132,7 @@ export async function sendCustomerOtpEmail({
   }
 
   try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user, pass: cleanPass },
-    });
+    const transporter = createEmailTransporter(user, cleanPass);
 
     const isRegister = purpose === 'register';
     const isForgot = purpose === 'forgot_password' || purpose === 'reset_password';
