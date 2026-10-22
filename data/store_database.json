@@ -776,6 +776,17 @@
       "id": "cust-1791793712262-9pra0",
       "createdAt": "2026-10-12T08:28:32.262Z",
       "updatedAt": "2026-10-12T08:28:32.262Z"
+    },
+    {
+      "name": "Sumit Kumar",
+      "email": "sumitku97552509@gmail.com",
+      "phone": "8878112004",
+      "passwordHash": "$2a$10$4l10TdwX.FR.IiCooeT9Qe.qD8i9e0qr5qJ5ce3HUYPEP5byCRGL2",
+      "addresses": [],
+      "isActive": true,
+      "id": "cust-1792656181828-sodzo",
+      "createdAt": "2026-10-22T08:03:01.829Z",
+      "updatedAt": "2026-10-22T08:03:01.829Z"
     }
   ]
 }

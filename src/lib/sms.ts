@@ -15,7 +15,46 @@ export async function sendOtpSms({
   const cleanPhone = phone.replace(/[^0-9]/g, ''); // e.g. 918878112007 or 8878112007
   const rawNumber = cleanPhone.length === 12 && cleanPhone.startsWith('91') ? cleanPhone.slice(2) : cleanPhone;
 
-  // 1. FAST2SMS Integration (Smart OTP & Bulk OTP for India +91 numbers)
+  // 1. ZOHO VOICE TWO-WAY SMS INTEGRATION
+  const zohoVoiceToken = process.env.ZOHO_VOICE_TOKEN || process.env.ZOHO_ACCESS_TOKEN;
+  const zohoVoiceSenderId = process.env.ZOHO_VOICE_SENDER_ID; // e.g. Zoho Voice assigned number or Sender ID
+
+  if (zohoVoiceToken && zohoVoiceSenderId) {
+    try {
+      const formattedRecipient = phone.startsWith('+') ? phone : `+91${rawNumber}`;
+      const msgContent = `Home-Warrior Verification Code: ${otp}. Valid for 5 minutes. Do not share with anyone.`;
+
+      const endpoint = process.env.ZOHO_REGION === 'in'
+        ? 'https://voice.zoho.in/rest/json/v1/sms/send'
+        : 'https://voice.zoho.com/rest/json/v1/sms/send';
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          Authorization: `Zoho-oauthtoken ${zohoVoiceToken}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          senderId: zohoVoiceSenderId,
+          customerNumber: formattedRecipient,
+          message: msgContent,
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && (data.status === 'SUCCESS' || data.code === 'ZVSMS-2000')) {
+        console.log(`[SMS Gateway - Zoho Voice] OTP delivered to ${formattedRecipient}. Log ID:`, data.send?.logid);
+        return { delivered: true, provider: 'Zoho Voice SMS' };
+      } else {
+        console.warn(`[SMS Gateway - Zoho Voice] Notice:`, data);
+      }
+    } catch (err: any) {
+      console.error(`[SMS Gateway - Zoho Voice] Exception:`, err);
+    }
+  }
+
+  // 2. FAST2SMS Integration (Smart OTP & Bulk OTP for India +91 numbers)
   const fast2SmsKey = process.env.FAST2SMS_API_KEY;
   const fast2SmsOtpId = process.env.FAST2SMS_OTP_ID;
 
