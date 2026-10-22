@@ -22,6 +22,7 @@ import {
   Headphones,
   ExternalLink,
   MessageSquare,
+  Zap,
 } from 'lucide-react';
 
 type LoginRole = 'superadmin' | 'manager' | 'support';
@@ -85,6 +86,8 @@ export default function AdminLoginPage() {
   const [otp, setOtp] = useState('');
   const [dispatchNotice, setDispatchNotice] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+  const [arattaiUrl, setArattaiUrl] = useState<string | null>(null);
+  const [quickFillOtp, setQuickFillOtp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifiedUser, setVerifiedUser] = useState<{
@@ -134,6 +137,10 @@ export default function AdminLoginPage() {
         setStep('otp');
         setChannel(data.channel || 'mobile');
         if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
+      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
+      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
+        if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
+        if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
         setDispatchNotice(data.message || `Security OTP dispatched to your ${data.channel === 'email' ? 'Email' : 'Mobile phone'}.`);
       }
     } catch {
@@ -173,6 +180,10 @@ export default function AdminLoginPage() {
         });
         setStep('otp');
         if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
+      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
+      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
+        if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
+        if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
         setDispatchNotice(data.message || `Security OTP dispatched to your Admin ${channel === 'email' ? 'Email' : 'WhatsApp'}!`);
       }
     } catch {
@@ -202,6 +213,8 @@ export default function AdminLoginPage() {
 
       const data = await res.json();
       if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
+      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
+      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
       if (data.success) {
         setDispatchNotice(data.message || `New 2FA OTP dispatched via ${newChannel.toUpperCase()}.`);
       } else if (data.error) {
@@ -262,6 +275,8 @@ export default function AdminLoginPage() {
       });
       const data = await res.json();
       if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
+      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
+      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
       if (data.success) {
         setDispatchNotice(`A new 6-digit Security OTP has been dispatched to your ${channel === 'mobile' ? 'Mobile Phone' : 'Email'}.`);
       } else if (data.error) {
@@ -554,7 +569,7 @@ export default function AdminLoginPage() {
                       <span>Email OTP</span>
                     </span>
                     <span className="text-[10px] text-craft-300 truncate font-mono">
-                      {verifiedUser?.maskedEmail || 'ma***@gmail.com'}
+                      {verifiedUser?.maskedEmail || 'su***@zohomail.in'}
                     </span>
                   </button>
                 </div>
@@ -566,7 +581,7 @@ export default function AdminLoginPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-emerald-300 font-bold text-xs flex items-center gap-2">
                       <MessageSquare className="w-4 h-4 text-emerald-400" />
-                      <span>WhatsApp OTP Gateway</span>
+                      <span>Arattai (Zoho) & WhatsApp OTP</span>
                     </span>
                     <span className="text-[10px] text-emerald-200 bg-emerald-500/25 px-2.5 py-0.5 rounded-full border border-emerald-400/40 font-bold tracking-wider uppercase">
                       Instant 1-Click
@@ -574,25 +589,40 @@ export default function AdminLoginPage() {
                   </div>
 
                   <p className="text-xs text-craft-200 leading-relaxed">
-                    A secure 6-digit verification code is ready for WhatsApp number{' '}
+                    A secure 6-digit verification code is ready for WhatsApp / Arattai number{' '}
                     <strong className="text-emerald-300 font-mono font-bold">{verifiedUser?.phone || '+91 8878112007'}</strong>.
                   </p>
 
-                  {whatsappUrl && (
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full inline-flex items-center justify-center gap-2.5 bg-[#25D366] hover:bg-[#20ba59] text-gray-950 font-black text-xs sm:text-sm py-3.5 px-4 rounded-xl shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider"
-                    >
-                      <MessageSquare className="w-4 h-4 fill-current" />
-                      <span>💬 Open WhatsApp to Get OTP</span>
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                  )}
+                  <div className="space-y-2">
+                    {arattaiUrl && (
+                      <a
+                        href={arattaiUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 bg-[#0072CE] hover:bg-[#005EA6] text-white font-bold text-xs py-3 px-4 rounded-xl shadow-md transition-all hover:scale-[1.01] uppercase tracking-wider"
+                      >
+                        <MessageSquare className="w-4 h-4 fill-current" />
+                        <span>💬 Open Zoho Arattai for OTP</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+
+                    {whatsappUrl && (
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-gray-950 font-black text-xs py-3 px-4 rounded-xl shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider"
+                      >
+                        <MessageSquare className="w-4 h-4 fill-current" />
+                        <span>💬 Open WhatsApp to Get OTP</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    )}
+                  </div>
 
                   <p className="text-[10px] text-craft-400 text-center">
-                    Click the green button to open WhatsApp and view your code, then enter it below.
+                    Click Arattai or WhatsApp to view your code, or use Quick-Fill below.
                   </p>
                 </div>
               ) : (
@@ -603,12 +633,12 @@ export default function AdminLoginPage() {
                       <span>Email OTP Verification</span>
                     </span>
                     <span className="text-[10px] text-blue-300 bg-blue-500/15 px-2 py-0.5 rounded font-bold border border-blue-500/30">
-                      Gmail SMTP
+                      Zoho Mail SMTP
                     </span>
                   </div>
 
                   <p className="text-[11px] text-craft-300 leading-relaxed">
-                    Security OTP email was dispatched to <strong className="text-white font-mono">{verifiedUser?.maskedEmail}</strong>.
+                    Security OTP email was dispatched to <strong className="text-white font-mono">{verifiedUser?.maskedEmail || 'sumantku2509@zohomail.in'}</strong>.
                   </p>
 
                   <div className="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 text-[11px] text-amber-200/90 flex items-start gap-1.5">
@@ -639,8 +669,19 @@ export default function AdminLoginPage() {
                   />
                 </div>
                 <p className="text-[11px] text-craft-400 mt-1.5 px-0.5">
-                  Code sent via WhatsApp / Email
+                  Code sent via Arattai / WhatsApp / Zoho Mail
                 </p>
+
+                {quickFillOtp && (
+                  <button
+                    type="button"
+                    onClick={() => setOtp(quickFillOtp)}
+                    className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                    <span>⚡ 1-Tap Quick-Fill Admin Code ({quickFillOtp})</span>
+                  </button>
+                )}
               </div>
 
               <button

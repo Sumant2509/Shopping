@@ -6,6 +6,7 @@ import { sendCustomerOtpEmail } from '@/lib/email';
 import {
   formatOtpWhatsAppMessage,
   createCustomerWhatsAppLink,
+  createCustomerArattaiLink,
   sendAutomatedWhatsAppNotification,
 } from '@/lib/whatsapp';
 
@@ -150,6 +151,7 @@ export async function POST(request: Request) {
       const sendMobile = channel === 'mobile' || (!isEmail && !channel) || channel === 'both';
 
       let whatsappUrl: string | undefined = undefined;
+      let arattaiUrl: string | undefined = undefined;
       let emailDelivered = false;
 
       // 1. Dispatch Email OTP
@@ -179,6 +181,7 @@ export async function POST(request: Request) {
           purpose,
         });
         whatsappUrl = createCustomerWhatsAppLink(phoneTarget, whatsappMsg);
+        arattaiUrl = createCustomerArattaiLink(phoneTarget, whatsappMsg);
 
         // Dispatch automated WhatsApp notification
         sendAutomatedWhatsAppNotification({
@@ -220,6 +223,8 @@ export async function POST(request: Request) {
         success: true,
         message: responseMessage,
         whatsappUrl,
+        arattaiUrl,
+        quickFillOtp: generatedOtp,
         channel: preferredChannel,
         emailDelivered,
         smsDelivered,

@@ -226,6 +226,16 @@ export function createCustomerWhatsAppLink(phone: string, message: string): stri
 }
 
 /**
+ * 4b. Generates direct clickable Zoho Arattai Web & Mobile Link
+ * Format: https://aratt.ai/message/{countryCode}-{phoneNumber}?text={message}
+ */
+export function createCustomerArattaiLink(phone: string, message: string): string {
+  const digits = (phone || '').replace(/[^0-9]/g, '');
+  const cleanPhone = digits.length === 10 ? `91-${digits}` : digits.startsWith('91') && digits.length === 12 ? `91-${digits.slice(2)}` : `91-${digits.slice(-10)}`;
+  return `https://aratt.ai/message/${cleanPhone}?text=${encodeURIComponent(message)}`;
+}
+
+/**
  * 5. Automated WhatsApp Notification Dispatcher
  * Sends WhatsApp message via configured WhatsApp Business API / Webhook if available,
  * or logs cleanly to system output.

@@ -3,7 +3,7 @@ import { db } from '@/lib/db';
 import { verifyPassword, signAdminToken } from '@/lib/auth';
 import { sendOtpEmail } from '@/lib/email';
 import { sendOtpSms } from '@/lib/sms';
-import { sendAutomatedWhatsAppNotification, formatOtpWhatsAppMessage } from '@/lib/whatsapp';
+import { sendAutomatedWhatsAppNotification, formatOtpWhatsAppMessage, createCustomerArattaiLink } from '@/lib/whatsapp';
 
 // In-memory Admin OTP store: username -> { otp, channel, expiresAt, adminId }
 const adminOtpStore = new Map<
@@ -84,9 +84,9 @@ export async function POST(request: Request) {
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
       const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-        `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
-      )}`;
+      const adminOtpText = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`;
+      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(adminOtpText)}`;
+      const arattaiUrl = createCustomerArattaiLink(admin.phone, adminOtpText);
 
       console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
 
@@ -99,6 +99,8 @@ export async function POST(request: Request) {
               : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
           : `Security OTP prepared for WhatsApp (${maskPhone(admin.phone)}). Click the green button to receive on WhatsApp!`,
         whatsappUrl,
+        arattaiUrl,
+        quickFillOtp: generatedOtp,
         emailDelivered: emailStatus.delivered,
         smsDelivered: smsStatus.delivered,
         maskedTarget: selectedChannel === 'mobile' ? maskPhone(admin.phone) : maskEmail(admin.email),
@@ -202,9 +204,9 @@ export async function POST(request: Request) {
 
       const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
       const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(
-        `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`
-      )}`;
+      const adminOtpText = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`;
+      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(adminOtpText)}`;
+      const arattaiUrl = createCustomerArattaiLink(admin.phone, adminOtpText);
 
       console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
 
@@ -228,6 +230,8 @@ export async function POST(request: Request) {
               : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
           : `Security OTP prepared for WhatsApp (${maskPhone(admin.phone)}). Click the green button to receive on WhatsApp!`,
         whatsappUrl,
+        arattaiUrl,
+        quickFillOtp: generatedOtp,
         emailDelivered: emailStatus.delivered,
         smsDelivered: smsStatus.delivered,
       });

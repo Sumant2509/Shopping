@@ -15,6 +15,8 @@ import {
   CheckCircle2,
   RefreshCw,
   MessageCircle,
+  MessageSquare,
+  Zap,
   ArrowLeft,
   ShieldCheck,
   Check,
@@ -47,6 +49,8 @@ function ForgotPasswordForm() {
   const [maskedTarget, setMaskedTarget] = useState('');
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
+  const [arattaiUrl, setArattaiUrl] = useState<string | null>(null);
+  const [quickFillOtp, setQuickFillOtp] = useState<string | null>(null);
   const [isEmailDelivered, setIsEmailDelivered] = useState<boolean>(false);
   const [resendTimer, setResendTimer] = useState<number>(0);
 
@@ -109,6 +113,8 @@ function ForgotPasswordForm() {
         setMaskedTarget(data.maskedTarget || target);
         setMaskedEmail(data.maskedEmail || null);
         setWhatsappUrl(data.whatsappUrl || null);
+        setArattaiUrl(data.arattaiUrl || null);
+        setQuickFillOtp(data.quickFillOtp || null);
         setIsEmailDelivered(Boolean(data.emailDelivered));
         setStep('reset');
         setSuccessMsg(data.message || 'Verification code sent successfully!');
@@ -326,22 +332,48 @@ function ForgotPasswordForm() {
                 </div>
               )}
 
-              {whatsappUrl && (
-                <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
-                  <p className="text-[11px] font-semibold text-emerald-900">
-                    Get your code immediately on WhatsApp:
-                  </p>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                  >
-                    <MessageCircle className="w-4 h-4" />
-                    <span>Open WhatsApp to Get Code</span>
-                  </a>
-                </div>
-              )}
+              {/* Zoho Arattai & WhatsApp direct delivery options */}
+              <div className="space-y-2">
+                {arattaiUrl && (
+                  <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2 shadow-sm">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] font-bold text-sky-950 flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
+                        <span>Zoho Arattai Instant Delivery:</span>
+                      </p>
+                      <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-full border border-sky-300">
+                        Zoho Chat
+                      </span>
+                    </div>
+                    <a
+                      href={arattaiUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#0072CE] hover:bg-[#005EA6] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      <span>Open Zoho Arattai to Get Code</span>
+                    </a>
+                  </div>
+                )}
+
+                {whatsappUrl && (
+                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
+                    <p className="text-[11px] font-semibold text-emerald-900">
+                      Get your code immediately on WhatsApp:
+                    </p>
+                    <a
+                      href={whatsappUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Open WhatsApp to Get Code</span>
+                    </a>
+                  </div>
+                )}
+              </div>
 
               {/* OTP Code */}
               <div>
@@ -364,6 +396,17 @@ function ForgotPasswordForm() {
                 <p className="text-[11px] text-craft-500 mt-1.5">
                   Code sent to <strong className="text-craft-800">{maskedTarget || activeTarget}</strong>
                 </p>
+
+                {quickFillOtp && (
+                  <button
+                    type="button"
+                    onClick={() => setOtpCode(quickFillOtp)}
+                    className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
+                    <span>⚡ 1-Tap Quick-Fill Code ({quickFillOtp})</span>
+                  </button>
+                )}
               </div>
 
               {/* New Password */}
