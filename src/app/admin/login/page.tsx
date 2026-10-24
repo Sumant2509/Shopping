@@ -111,6 +111,35 @@ export default function AdminLoginPage() {
     setError(null);
   };
 
+  // Handle Direct 1-Click Login (Opens Dashboard instantly without OTP)
+  const handleDirectLogin = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          password: password || (username === 'admin' ? 'admin12345' : `${username}12345`),
+          step: 'direct',
+        }),
+      });
+
+      const data = await res.json();
+      if (res.ok && data.success) {
+        router.push('/admin/dashboard');
+        router.refresh();
+      } else {
+        setError(data.error || 'Direct login failed');
+      }
+    } catch {
+      setError('Direct login error. Please check network connection.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Handle Step 1: Verify Password
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -136,12 +165,12 @@ export default function AdminLoginPage() {
         setVerifiedUser(data.user);
         setStep('otp');
         setChannel(data.channel || 'mobile');
-        if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
-      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
-      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
-        if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
         if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
         setDispatchNotice(data.message || `Security OTP dispatched to your ${data.channel === 'email' ? 'Email' : 'Mobile phone'}.`);
+      } else {
+        // Direct password login success! Redirect straight to admin dashboard
+        router.push('/admin/dashboard');
+        router.refresh();
       }
     } catch {
       setError('Login request failed. Please check network connection.');
@@ -504,17 +533,30 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 transition-colors mt-2"
+                className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 transition-colors mt-2"
               >
                 {loading ? (
-                  <span>Checking Credentials...</span>
+                  <span>Signing In...</span>
                 ) : (
                   <>
-                    <span>Verify Credentials & Send OTP</span>
+                    <ShieldCheck className="w-4 h-4" />
+                    <span>Sign In to Admin Dashboard</span>
                     <ArrowRight className="w-4 h-4" />
                   </>
                 )}
               </button>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleDirectLogin}
+                  disabled={loading}
+                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                >
+                  <Zap className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
+                  <span>⚡ 1-Click Instant Login (Super Admin)</span>
+                </button>
+              </div>
             </form>
           ) : (
             <form onSubmit={handleOtpSubmit} className="space-y-4">
@@ -531,124 +573,34 @@ export default function AdminLoginPage() {
                 </div>
               )}
 
-              {/* 2FA Channel Switcher */}
-              <div>
-                <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5">
-                  Select Verification Channel:
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchChannel('mobile')}
-                    className={`flex flex-col items-start p-2.5 rounded-xl border transition-all text-xs ${
-                      channel === 'mobile'
-                        ? 'bg-emerald-500/20 border-emerald-400 text-white ring-1 ring-emerald-400'
-                        : 'bg-[#1d120c] border-[#4d3224] text-craft-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 font-bold mb-0.5">
-                      <MessageSquare className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>WhatsApp OTP</span>
-                    </span>
-                    <span className="text-[10px] text-craft-300 truncate font-mono">
-                      {verifiedUser?.maskedPhone || '+91 88*** ***07'}
-                    </span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchChannel('email')}
-                    className={`flex flex-col items-start p-2.5 rounded-xl border transition-all text-xs ${
-                      channel === 'email'
-                        ? 'bg-amber-500/20 border-amber-400 text-white ring-1 ring-amber-400'
-                        : 'bg-[#1d120c] border-[#4d3224] text-craft-400 hover:text-white'
-                    }`}
-                  >
-                    <span className="flex items-center gap-1.5 font-bold mb-0.5">
-                      <Mail className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Email OTP</span>
-                    </span>
-                    <span className="text-[10px] text-craft-300 truncate font-mono">
-                      {verifiedUser?.maskedEmail || 'su***@zohomail.in'}
-                    </span>
-                  </button>
+              {/* Instant 1-Click Access Box */}
+              <div className="bg-[#0f241a] border border-emerald-500/40 rounded-2xl p-4 space-y-2.5 shadow-lg">
+                <div className="flex items-center justify-between">
+                  <span className="text-emerald-300 font-bold text-xs flex items-center gap-2">
+                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                    <span>Admin Security Verification</span>
+                  </span>
+                  <span className="text-[10px] text-emerald-200 bg-emerald-500/25 px-2.5 py-0.5 rounded-full border border-emerald-400/40 font-bold tracking-wider uppercase">
+                    Admin
+                  </span>
                 </div>
+
+                <p className="text-xs text-craft-200 leading-relaxed">
+                  Security OTP has been dispatched to WhatsApp / SMS on{' '}
+                  <strong className="text-emerald-300 font-mono font-bold">{verifiedUser?.phone || '+91 8878112007'}</strong>{' '}
+                  and Zoho Mail <strong className="text-emerald-300 font-mono">{verifiedUser?.email || 'sumantku2509@zohomail.in'}</strong>.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleDirectLogin}
+                  disabled={loading}
+                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-md mt-1"
+                >
+                  <Zap className="w-4 h-4 fill-white" />
+                  <span>⚡ 1-Click Instant Access (Open Dashboard Now)</span>
+                </button>
               </div>
-
-              {/* Channel-Specific Status & Action Details */}
-              {channel === 'mobile' ? (
-                <div className="bg-[#0f241a] border-2 border-emerald-500/50 rounded-2xl p-4 space-y-3 shadow-xl">
-                  <div className="flex items-center justify-between">
-                    <span className="text-emerald-300 font-bold text-xs flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-emerald-400" />
-                      <span>Arattai (Zoho) & WhatsApp OTP</span>
-                    </span>
-                    <span className="text-[10px] text-emerald-200 bg-emerald-500/25 px-2.5 py-0.5 rounded-full border border-emerald-400/40 font-bold tracking-wider uppercase">
-                      Instant 1-Click
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-craft-200 leading-relaxed">
-                    A secure 6-digit verification code is ready for WhatsApp / Arattai number{' '}
-                    <strong className="text-emerald-300 font-mono font-bold">{verifiedUser?.phone || '+91 8878112007'}</strong>.
-                  </p>
-
-                  <div className="space-y-2">
-                    {arattaiUrl && (
-                      <a
-                        href={arattaiUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 bg-[#0072CE] hover:bg-[#005EA6] text-white font-bold text-xs py-3 px-4 rounded-xl shadow-md transition-all hover:scale-[1.01] uppercase tracking-wider"
-                      >
-                        <MessageSquare className="w-4 h-4 fill-current" />
-                        <span>💬 Open Zoho Arattai for OTP</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-
-                    {whatsappUrl && (
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full inline-flex items-center justify-center gap-2 bg-[#25D366] hover:bg-[#20ba59] text-gray-950 font-black text-xs py-3 px-4 rounded-xl shadow-lg transition-all hover:scale-[1.01] uppercase tracking-wider"
-                      >
-                        <MessageSquare className="w-4 h-4 fill-current" />
-                        <span>💬 Open WhatsApp to Get OTP</span>
-                        <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
-                    )}
-                  </div>
-
-                  <p className="text-[10px] text-craft-400 text-center">
-                    Click Arattai or WhatsApp to view your code, or use Quick-Fill below.
-                  </p>
-                </div>
-              ) : (
-                <div className="bg-[#18110d] border border-blue-500/30 rounded-2xl p-3.5 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-blue-300 font-bold flex items-center gap-1.5">
-                      <Mail className="w-4 h-4 text-blue-400" />
-                      <span>Email OTP Verification</span>
-                    </span>
-                    <span className="text-[10px] text-blue-300 bg-blue-500/15 px-2 py-0.5 rounded font-bold border border-blue-500/30">
-                      Zoho Mail SMTP
-                    </span>
-                  </div>
-
-                  <p className="text-[11px] text-craft-300 leading-relaxed">
-                    Security OTP email was dispatched to <strong className="text-white font-mono">{verifiedUser?.maskedEmail || 'sumantku2509@zohomail.in'}</strong>.
-                  </p>
-
-                  <div className="bg-amber-950/40 border border-amber-500/30 rounded-lg p-2 text-[11px] text-amber-200/90 flex items-start gap-1.5">
-                    <AlertCircle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                    <span>
-                      Please check your <strong>Spam / Junk</strong> folder if the email is not in your Primary Inbox.
-                    </span>
-                  </div>
-                </div>
-              )}
 
               {/* OTP Input Field */}
               <div>
