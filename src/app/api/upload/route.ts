@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { cookies } from 'next/headers';
+import { verifyAdminToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,10 +15,25 @@ const ALLOWED_MIME_TYPES = new Set([
   'image/svg+xml',
 ]);
 
+const ALLOWED_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'svg']);
 const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 MB
+
+async function checkAdminAuth(): Promise<boolean> {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin_token')?.value;
+  if (!token) return false;
+  const admin = await verifyAdminToken(token);
+  return Boolean(admin);
+}
 
 export async function POST(req: NextRequest) {
   try {
+    // 1. Enforce Admin Authentication
+    const isAdmin = await checkAdminAuth();
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Unauthorized: Admin credentials required for file upload' }, { status: 401 });
+    }
+
     const contentType = req.headers.get('content-type') || '';
 
     // Handle JSON payload with base64 data URL
@@ -33,19 +50,27 @@ export async function POST(req: NextRequest) {
       }
 
       const mimeType = matches[1];
+      if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+        return NextResponse.json({ error: 'Unacceptable image format' }, { status: 400 });
+      }
+
       const base64Data = matches[2];
       const buffer = Buffer.from(base64Data, 'base64');
+      if (buffer.length > MAX_FILE_SIZE) {
+        return NextResponse.json({ error: 'File size exceeds maximum allowed 15MB' }, { status: 400 });
+      }
 
       let ext = 'jpg';
       if (mimeType.includes('png')) ext = 'png';
       else if (mimeType.includes('webp')) ext = 'webp';
       else if (mimeType.includes('gif')) ext = 'gif';
       else if (mimeType.includes('svg')) ext = 'svg';
+      else if (mimeType.includes('avif')) ext = 'avif';
 
       const uploadDir = path.join(process.cwd(), 'public', 'uploads');
       await fs.mkdir(uploadDir, { recursive: true });
 
-      const safeBase = (filename || 'mat').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
+      const safeBase = path.basename(filename || 'mat').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
       const uniqueName = `${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const filePath = path.join(uploadDir, uniqueName);
 
@@ -87,18 +112,17 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const safeName = path.basename(file.name);
       let ext = 'jpg';
-      if (file.type === 'image/png') ext = 'png';
-      else if (file.type === 'image/webp') ext = 'webp';
-      else if (file.type === 'image/gif') ext = 'gif';
-      else if (file.type === 'image/svg+xml') ext = 'svg';
-      else if (file.type === 'image/avif') ext = 'avif';
-      else if (file.name.includes('.')) {
-        ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+      if (safeName.includes('.')) {
+        const extracted = safeName.split('.').pop()?.toLowerCase() || 'jpg';
+        if (ALLOWED_EXTENSIONS.has(extracted)) {
+          ext = extracted;
+        }
       }
 
-      const originalBase = file.name
-        .substring(0, file.name.lastIndexOf('.') || file.name.length)
+      const originalBase = safeName
+        .substring(0, safeName.lastIndexOf('.') || safeName.length)
         .replace(/[^a-zA-Z0-9_-]/g, '_')
         .slice(0, 30);
 
@@ -127,6 +151,11 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    const isAdmin = await checkAdminAuth();
+    if (!isAdmin) {
+      return NextResponse.json({ error: 'Unauthorized: Admin credentials required to delete files' }, { status: 401 });
+    }
+
     const { searchParams } = new URL(req.url);
     const url = searchParams.get('url');
 

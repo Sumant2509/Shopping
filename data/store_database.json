@@ -1,12 +1,13 @@
 {
   "products": [
     {
+      "_id": "6adcd5818fa8c5f7eb4ea30d",
       "name": "Handmade Multi-Color Flower Petal Doormat",
       "slug": "flower",
       "description": "Premium handmade colorful multi-purpose doormat. Soft & comfortable underfoot, washable & reusable, and highly durable for daily home use. Crafted with vibrant 12 petals in an artistic floral arrangement. Ideal for home entrance, kitchen, balcony, and living room.",
-      "price": 349,
+      "price": 1,
       "mrp": 799,
-      "discountPercent": 56,
+      "discountPercent": 100,
       "shape": "flower",
       "dimensions": "Diameter: 20 inches / 50.8 cm",
       "thickness": "0.6 cm / 6 mm",
@@ -49,540 +50,55 @@
       ],
       "id": "prod-1791488808964-q0fg",
       "createdAt": "2026-10-08T19:46:48.964Z"
-    },
-    {
-      "id": "prod-starburst-01",
-      "name": "Handmade Multi-Color Starburst Wheel Doormat",
-      "slug": "handmade-starburst-wheel-doormat",
-      "description": "Exquisite 12-point radial starburst doormat, meticulously hand-braided with vibrant multi-tonal cotton textile yarns in pink, emerald green, terracotta, and gold. A stunning centerpiece mat for entryways, living rooms, and pooja areas.",
-      "price": 499,
-      "mrp": 899,
-      "discountPercent": 44,
-      "shape": "starburst",
-      "dimensions": "Diameter: 22 inches / 55.8 cm",
-      "thickness": "0.8 cm / 8 mm",
-      "material": "100% Pure Braided Cotton & Upcycled Textile Blend",
-      "washability": "Hand Washable & Gentle Machine Washable",
-      "craftType": "Handcrafted Radial Starburst Weave",
-      "colors": [
-        "Vibrant Fiesta Burst",
-        "Pink & Emerald",
-        "Terracotta & Gold"
-      ],
-      "images": [
-        "/images/starburst_doormat.png",
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=80"
-      ],
-      "stock": 35,
-      "sku": "SKM-STR-22-01",
-      "category": "Starburst Mats",
-      "rating": 5,
-      "reviewCount": 42,
-      "isBestSeller": true,
-      "isNewArrival": true,
-      "inStock": true,
-      "tags": [
-        "starburst",
-        "radial",
-        "handmade",
-        "entryway",
-        "bestseller",
-        "multicolor"
-      ],
-      "features": [
-        "Diameter: 22 inches / 55.8 cm",
-        "Thickness: 0.8 cm / 8 mm",
-        "12-point radial starburst petal design",
-        "Handcrafted with multi-tonal vibrant yarn",
-        "Washable (Hand wash or gentle cycle)",
-        "Durable heavy-duty braided construction"
-      ],
-      "createdAt": "2026-10-01T10:00:00.000Z"
     }
   ],
   "orders": [
     {
-      "orderNumber": "SKM-2026-4356",
-      "customer": {
-        "name": "Sumant Kumar",
-        "phone": "8878311084",
-        "email": "sumantku120@gmail.com",
-        "address": {
-          "houseNo": "1",
-          "street": "Near by komal kiran store Udiya Mohalla",
-          "landmark": "",
-          "city": "Bhilai",
-          "state": "Chhattisgarh",
-          "pincode": "490011"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-1791488808964-q0fg",
-          "name": "Handmade Doormat",
-          "slug": "flower",
-          "price": 1,
-          "mrp": 799,
-          "quantity": 1,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
-          "shape": "flower"
-        }
-      ],
-      "subtotal": 1,
-      "shippingFee": 0.5,
-      "discount": 0,
-      "totalAmount": 2.5,
-      "paymentMethod": "COD",
-      "paymentStatus": "PAID",
-      "estimatedDeliveryDate": "Sat, 17 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791793789100",
-      "createdAt": "2026-10-12T08:29:49.100Z",
-      "updatedAt": "2026-10-12T08:44:37.152Z",
-      "trackingNumber": "12158151812118",
-      "courierPartner": "Delhivery Express",
-      "orderStatus": "DELIVERED"
-    },
-    {
-      "orderNumber": "SKM-2026-5076",
-      "customer": {
-        "name": "sumant kumar",
-        "phone": "8878112007",
-        "email": "mandaldevanand271@gmail.com",
-        "address": {
-          "houseNo": "1",
-          "street": "60 Ward 33 Udiya Mohalla Khursipar Bhilai",
-          "landmark": "",
-          "city": "Bhilai",
-          "state": "Chhattisgarh",
-          "pincode": "490011"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-1791488808964-q0fg",
-          "name": "Handmade Doormat",
-          "slug": "flower",
-          "price": 1,
-          "mrp": 799,
-          "quantity": 1,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
-          "shape": "flower"
-        }
-      ],
-      "subtotal": 1,
-      "shippingFee": 0.5,
-      "discount": 0,
-      "totalAmount": 1.5,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "razorpayOrderId": "order_TmkckGBWdrm5ze",
-      "razorpayPaymentId": "pay_TmkeSIw1XRm766",
-      "orderStatus": "CONFIRMED",
-      "estimatedDeliveryDate": "Sat, 17 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791754542664",
-      "createdAt": "2026-10-11T21:35:42.664Z",
-      "updatedAt": "2026-10-11T21:35:42.664Z"
-    },
-    {
-      "orderNumber": "SKM-2026-9735",
-      "customer": {
-        "name": "Devanand Mandal",
-        "phone": "8874984456",
-        "email": "mandaldevanand271@gmail.com",
-        "address": {
-          "houseNo": "171",
-          "street": "60 Ward 44 Udiya Mohalla laxmi narayan nagar Khursipar Bhilai",
-          "landmark": "",
-          "city": "Bhilai",
-          "state": "Chhattisgarh",
-          "pincode": "490011"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-1791488808964-q0fg",
-          "name": "Handmade Doormat",
-          "slug": "flower",
-          "price": 1,
-          "mrp": 799,
-          "quantity": 1,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
-          "shape": "flower"
-        }
-      ],
-      "subtotal": 1,
-      "shippingFee": 0.5,
-      "discount": 0,
-      "totalAmount": 1.5,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "razorpayPaymentId": "UTR1728925690",
-      "upiUtr": "UTR1728925690",
-      "upiTransactionId": "UPI_1791728925690",
-      "orderStatus": "SHIPPED",
-      "estimatedDeliveryDate": "Fri, 16 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791728927740",
-      "createdAt": "2026-10-11T14:28:47.739Z",
-      "updatedAt": "2026-10-11T16:24:11.316Z",
-      "courierPartner": "India Post Speed Post"
-    },
-    {
-      "orderNumber": "SKM-2026-2062",
-      "customer": {
-        "name": "sumant kumar",
-        "phone": "8874984456",
-        "email": "mandaldevanand271@gmail.com",
-        "address": {
-          "houseNo": "5",
-          "street": "60 Ward 33 Udiya Mohalla Khursipar Bhilai",
-          "landmark": "",
-          "city": "Durg",
-          "state": "Chhattisgarh",
-          "pincode": "490011"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-1791488808964-q0fg",
-          "name": "Handmade Doormat",
-          "slug": "flower",
-          "price": 1,
-          "mrp": 799,
-          "quantity": 1,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
-          "shape": "flower"
-        }
-      ],
-      "subtotal": 1,
-      "shippingFee": 0.5,
-      "discount": 0,
-      "totalAmount": 1.5,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "razorpayPaymentId": "5649616516951985",
-      "upiUtr": "5649616516951985",
-      "upiTransactionId": "UPI_1791496713515",
-      "orderStatus": "PROCESSING",
-      "estimatedDeliveryDate": "Wed, 14 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791496715240",
-      "createdAt": "2026-10-08T21:58:35.240Z",
-      "updatedAt": "2026-10-11T14:54:27.031Z"
-    },
-    {
-      "orderNumber": "SKM-2026-9651",
-      "customer": {
-        "name": "Devanand Mandal",
-        "phone": "8874984456",
-        "email": "mandaldevanand271@gmail.com",
-        "address": {
-          "houseNo": "171",
-          "street": "60 Ward 33 Udiya Mohalla Khursipar Bhilai",
-          "landmark": "",
-          "city": "bhlai",
-          "state": "Chhattisgarh",
-          "pincode": "490011"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-1791488808964-q0fg",
-          "name": "Handmade Doormat",
-          "slug": "flower",
-          "price": 1,
-          "mrp": 799,
-          "quantity": 1,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/uploads/mat-Screenshot_2026-09-18_173409-1791488662779-vxds7.png",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
-          "shape": "flower"
-        }
-      ],
-      "subtotal": 1,
-      "shippingFee": 0.5,
-      "discount": 0,
-      "totalAmount": 1.5,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "razorpayPaymentId": "580579022781",
-      "upiUtr": "580579022781",
-      "upiTransactionId": "UPI_1791496628211",
-      "orderStatus": "CONFIRMED",
-      "estimatedDeliveryDate": "Wed, 14 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791496629943",
-      "createdAt": "2026-10-08T21:57:09.943Z",
-      "updatedAt": "2026-10-08T21:57:09.943Z"
-    },
-    {
-      "orderNumber": "SKM-2026-3216",
-      "customer": {
-        "name": "Test Online Shopper",
-        "phone": "9876543210",
-        "email": "shopper@example.com",
-        "address": {
-          "houseNo": "Flat 101",
-          "street": "Station Road",
-          "city": "Durg",
-          "state": "Chhattisgarh",
-          "pincode": "491001"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-starburst-01",
-          "name": "Handmade Starburst Mat",
-          "slug": "handmade-starburst-wheel-doormat",
-          "price": 499,
-          "mrp": 899,
-          "quantity": 1,
-          "selectedColor": "Terracotta & Gold",
-          "dimensions": "22 inches",
-          "shape": "starburst"
-        }
-      ],
-      "subtotal": 499,
-      "shippingFee": 60,
-      "discount": 0,
-      "totalAmount": 559,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "razorpayPaymentId": "UPI_TEST_123",
-      "upiUtr": "429381749201",
-      "upiTransactionId": "UPI_TEST_123",
-      "orderStatus": "CONFIRMED",
-      "estimatedDeliveryDate": "Wed, 14 Oct, 2026",
-      "id": "ord-1791494307161",
-      "createdAt": "2026-10-08T21:18:27.161Z",
-      "updatedAt": "2026-10-08T21:18:27.161Z"
-    },
-    {
-      "orderNumber": "SKM-2026-9951",
+      "orderNumber": "SKM-2026-5646",
       "customer": {
         "name": "Sumit Kumar",
-        "phone": "8878112502",
-        "email": "sumitku97552509@gmail.com",
+        "phone": "8878112086",
+        "email": "sumantku120@gmail.com",
         "address": {
-          "houseNo": "54",
-          "street": "589",
+          "houseNo": "jyty",
+          "street": "uhjk",
           "landmark": "",
-          "city": "3546",
+          "city": "fugbv8yg",
           "state": "Uttar Pradesh",
-          "pincode": "490011"
+          "pincode": "451365"
         }
       },
       "items": [
         {
-          "productId": "prod-starburst-01",
-          "name": "Handmade Multi-Color Starburst Wheel Doormat",
-          "slug": "handmade-starburst-wheel-doormat",
-          "price": 499,
-          "mrp": 899,
+          "productId": "custom-flower-1793375635524",
+          "name": "Custom 6-Petal Handcrafted Flower Doormat (20\")",
+          "slug": "custom-handcrafted-flower-doormat",
+          "price": 449,
+          "mrp": 741,
           "quantity": 1,
-          "selectedColor": "Vibrant Fiesta Burst",
+          "selectedColor": "#6b21a8,#eab308,#1d4ed8,#b91c1c,#84cc16,#ec4899",
           "image": "/images/starburst_doormat.png",
-          "dimensions": "Diameter: 22 inches / 55.8 cm",
-          "shape": "starburst"
-        }
-      ],
-      "subtotal": 499,
-      "shippingFee": 60,
-      "discount": 0,
-      "totalAmount": 559,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "orderStatus": "PROCESSING",
-      "estimatedDeliveryDate": "Tue, 13 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791404965764",
-      "createdAt": "2026-10-07T20:29:25.764Z",
-      "updatedAt": "2026-10-08T14:01:49.788Z"
-    },
-    {
-      "orderNumber": "SKM-2026-7850",
-      "customer": {
-        "name": "sumant kumar",
-        "phone": "8878112007",
-        "email": "mandaldevanand271@gmail.com",
-        "address": {
-          "houseNo": "171",
-          "street": "60 Ward 33 Udiya Mohalla Khursipar Bhilai",
-          "landmark": "",
-          "city": "durg",
-          "state": "Chhattisgarh",
-          "pincode": "490011"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-flower-01",
-          "name": "Handmade Flower-Shaped Braided Doormat",
-          "slug": "handmade-flower-doormat",
-          "price": 449,
-          "mrp": 799,
-          "quantity": 1,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/images/hero_doormat.jpg",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
+          "dimensions": "Diameter: 20 inches / 50.0 cm",
           "shape": "flower"
         }
       ],
       "subtotal": 449,
-      "shippingFee": 60,
-      "discount": 0,
-      "totalAmount": 509,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "orderStatus": "PROCESSING",
-      "estimatedDeliveryDate": "Sun, 11 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791281795697",
-      "createdAt": "2026-10-06T10:16:35.697Z",
-      "updatedAt": "2026-10-08T14:01:50.890Z"
-    },
-    {
-      "orderNumber": "SKM-2026-4605",
-      "customer": {
-        "name": "sumant kumar",
-        "phone": "8878112007",
-        "email": "mandaldevanand271@gmail.com",
-        "address": {
-          "houseNo": "171",
-          "street": "60 Ward 33 Udiya Mohalla Khursipar Bhilai",
-          "landmark": "",
-          "city": "durg",
-          "state": "Chhattisgarh",
-          "pincode": "490011"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-flower-01",
-          "name": "Handmade Flower-Shaped Braided Doormat",
-          "slug": "handmade-flower-doormat",
-          "price": 449,
-          "mrp": 799,
-          "quantity": 1,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/images/hero_doormat.jpg",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
-          "shape": "flower"
-        }
-      ],
-      "subtotal": 449,
-      "shippingFee": 60,
-      "discount": 0,
-      "totalAmount": 509,
-      "paymentMethod": "COD",
-      "paymentStatus": "PENDING",
-      "orderStatus": "PROCESSING",
-      "estimatedDeliveryDate": "Sun, 11 Oct, 2026",
-      "notes": "",
-      "id": "ord-1791281342224",
-      "createdAt": "2026-10-06T10:09:02.224Z",
-      "updatedAt": "2026-10-08T14:01:59.197Z"
-    },
-    {
-      "id": "ord-1001",
-      "orderNumber": "SKM-2026-1082",
-      "customer": {
-        "name": "Priya Sharma",
-        "phone": "9876543210",
-        "email": "priya.sharma@example.com",
-        "address": {
-          "houseNo": "Flat 402, Sunshine Heights",
-          "street": "14th Main, Indiranagar",
-          "landmark": "Near Metro Pillar 84",
-          "city": "Bengaluru",
-          "state": "Karnataka",
-          "pincode": "560038"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-flower-01",
-          "name": "Handmade Flower-Shaped Braided Doormat",
-          "slug": "handmade-flower-doormat",
-          "price": 449,
-          "mrp": 799,
-          "quantity": 2,
-          "selectedColor": "Marigold & Terracotta",
-          "image": "/images/hero_doormat.jpg",
-          "dimensions": "Diameter: 20 inches / 50.8 cm",
-          "shape": "flower"
-        }
-      ],
-      "subtotal": 898,
       "shippingFee": 0,
-      "discount": 89,
-      "couponCode": "WELCOME10",
-      "totalAmount": 809,
-      "paymentMethod": "UPI",
-      "paymentStatus": "PAID",
-      "razorpayOrderId": "order_demo_1001",
-      "razorpayPaymentId": "pay_demo_1001_upi",
-      "orderStatus": "PACKED",
-      "trackingNumber": "DLV-9823471029",
-      "courierPartner": "Delhivery Express",
-      "estimatedDeliveryDate": "10 Oct 2026",
-      "createdAt": "2026-10-04T11:20:00.000Z",
-      "updatedAt": "2026-10-08T14:01:56.343Z"
-    },
-    {
-      "id": "ord-1002",
-      "orderNumber": "SKM-2026-1083",
-      "customer": {
-        "name": "Rajesh Verma",
-        "phone": "9811223344",
-        "email": "rajesh.v@example.com",
-        "address": {
-          "houseNo": "House 24, Block C",
-          "street": "Green Park Extension",
-          "landmark": "Opposite Gurudwara",
-          "city": "New Delhi",
-          "state": "Delhi",
-          "pincode": "110016"
-        }
-      },
-      "items": [
-        {
-          "productId": "prod-round-02",
-          "name": "Spiral Round Braided Cotton Doormat",
-          "slug": "spiral-round-braided-doormat",
-          "price": 399,
-          "mrp": 699,
-          "quantity": 1,
-          "selectedColor": "Earthy Terracotta & Jute",
-          "image": "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=80",
-          "dimensions": "Diameter: 22 inches / 56 cm",
-          "shape": "round"
-        }
-      ],
-      "subtotal": 399,
-      "shippingFee": 60,
       "discount": 0,
-      "totalAmount": 459,
+      "totalAmount": 450,
       "paymentMethod": "COD",
       "paymentStatus": "PENDING",
-      "orderStatus": "PROCESSING",
-      "estimatedDeliveryDate": "11 Oct 2026",
-      "createdAt": "2026-10-05T09:15:00.000Z",
-      "updatedAt": "2026-10-05T09:15:00.000Z"
+      "orderStatus": "CONFIRMED",
+      "estimatedDeliveryDate": "Wed, 4 Nov, 2026",
+      "notes": "",
+      "id": "ord-1793375662249",
+      "createdAt": "2026-10-30T15:54:22.249Z",
+      "updatedAt": "2026-10-30T15:54:22.249Z"
     }
   ],
   "coupons": [
     {
+      "_id": "6adcd5818fa8c5f7eb4ea31a",
       "id": "cpn-1",
       "code": "WELCOME10",
       "discountPercent": 10,
@@ -591,6 +107,7 @@
       "description": "Get 10% OFF on your first handcrafted mat order"
     },
     {
+      "_id": "6adcd5818fa8c5f7eb4ea31b",
       "id": "cpn-2",
       "code": "HOMEDECOR15",
       "discountPercent": 15,
@@ -600,6 +117,7 @@
       "description": "Get 15% OFF on orders above ₹799"
     },
     {
+      "_id": "6adcd5818fa8c5f7eb4ea31c",
       "id": "cpn-3",
       "code": "FESTIVE50",
       "discountAmount": 50,
@@ -608,6 +126,7 @@
       "description": "Flat ₹50 OFF on orders above ₹499"
     },
     {
+      "_id": "6adcd5818fa8c5f7eb4ea31d",
       "code": "FRIEND",
       "discountPercent": 90,
       "minOrderValue": 499,
@@ -618,6 +137,7 @@
   ],
   "reviews": [
     {
+      "_id": "6adcd5828fa8c5f7eb4ea31e",
       "id": "rev-1",
       "productId": "prod-flower-01",
       "productName": "Handmade Flower-Shaped Braided Doormat",
@@ -630,6 +150,7 @@
       "isApproved": true
     },
     {
+      "_id": "6adcd5828fa8c5f7eb4ea31f",
       "id": "rev-2",
       "productId": "prod-flower-01",
       "productName": "Handmade Flower-Shaped Braided Doormat",
@@ -642,6 +163,7 @@
       "isApproved": true
     },
     {
+      "_id": "6adcd5828fa8c5f7eb4ea320",
       "id": "rev-3",
       "productId": "prod-round-02",
       "productName": "Spiral Round Braided Cotton Doormat",
@@ -692,20 +214,8 @@
       "isActive": true,
       "mobileVerified": true,
       "emailVerified": true,
-      "createdAt": "2026-10-01T10:00:00.000Z"
-    },
-    {
-      "id": "admin-2",
-      "name": "Devanand Mandal (Store Manager)",
-      "username": "manager",
-      "email": "operations@sumantcrafts.in",
-      "phone": "+91 9876543210",
-      "role": "manager",
-      "passwordHash": "$2a$10$jHB0bDRTxVh/0.rAOrF2Z.OIIUW5O7S/9MnD9OPi6QCQbsxwybYYq",
-      "isActive": true,
-      "mobileVerified": true,
-      "emailVerified": true,
-      "createdAt": "2026-10-02T10:00:00.000Z"
+      "createdAt": "2026-10-01T10:00:00.000Z",
+      "_id": "6adcd5828fa8c5f7eb4ea321"
     },
     {
       "id": "admin-3",
@@ -718,75 +228,45 @@
       "isActive": true,
       "mobileVerified": true,
       "emailVerified": true,
-      "createdAt": "2026-10-03T10:00:00.000Z"
+      "createdAt": "2026-10-03T10:00:00.000Z",
+      "_id": "6adcd5828fa8c5f7eb4ea323"
+    },
+    {
+      "id": "admin-2",
+      "name": "Devanand Mandal (Store Manager)",
+      "username": "manager",
+      "email": "operations@sumantcrafts.in",
+      "phone": "+91 9876543210",
+      "role": "manager",
+      "passwordHash": "$2a$10$xd8LgaBZgVrHGQOo1b9tJukGipjC4rJ3MyeRwET4z/4iRErF8D/NC",
+      "isActive": true,
+      "mobileVerified": true,
+      "emailVerified": true,
+      "createdAt": "2026-10-02T10:00:00.000Z"
     }
   ],
   "customers": [
     {
-      "name": "Sumant Kumar",
-      "email": "sumantku2509@zohomail.in",
-      "phone": "8878112007",
-      "passwordHash": "$2a$10$hnyuQ.f7Zq9HiABWHx4CrOfsh2oK6XivSQRpBGhpiFNUpj3aqMHvG",
-      "addresses": [],
-      "isActive": true,
-      "id": "cust-1791311437485-kvyji",
-      "createdAt": "2026-10-06T18:30:37.485Z",
-      "updatedAt": "2026-10-11T15:23:40.862Z"
-    },
-    {
-      "name": "Sumant Kumar",
-      "email": "sumantku2509@zohomail.in",
-      "phone": "8878112086",
-      "passwordHash": "$2a$10$tgtq250fOOvM2SGRZJ5O5OmQ91fUFS8C/PuJaDEJw2QidssfZI82a",
-      "addresses": [],
-      "isActive": true,
-      "id": "cust-1791491914087-64unr",
-      "createdAt": "2026-10-08T20:38:34.087Z",
-      "updatedAt": "2026-10-08T20:38:34.087Z"
-    },
-    {
-      "name": "mandaldevanand",
-      "email": "mandaldevanand@gmail.com",
-      "phone": "",
-      "passwordHash": "",
-      "addresses": [],
-      "isActive": true,
-      "id": "cust-1791492411358-irpu8",
-      "createdAt": "2026-10-08T20:46:51.358Z",
-      "updatedAt": "2026-10-08T20:46:51.358Z"
-    },
-    {
-      "name": "Devanand Mandal",
-      "email": "mandaldevanand271@gmail.com",
-      "phone": "8874984456",
-      "passwordHash": "$2a$10$MBd8rObwR23tR1yE.aHHfuKOdj7lxbvExkqU1A7aMnUr4624.tDLm",
-      "addresses": [],
-      "isActive": true,
-      "id": "cust-1791492795774-9okhv",
-      "createdAt": "2026-10-08T20:53:15.774Z",
-      "updatedAt": "2026-10-11T15:31:57.471Z"
-    },
-    {
-      "name": "Sumant kumar",
-      "email": "sumantku120@gmail.com",
+      "name": "Sumit Kumar",
+      "email": "sumitku97552509@gmail.com",
       "phone": "8878311084",
-      "passwordHash": "$2a$10$x0jPLvoHbgf8TiMJ5.JLCOX1gITRWFVJ0xiMpxGh/AsY8s093pkMW",
+      "passwordHash": "$2a$10$GKK3IoJDXAjP4jscAR.7A.NVsqxKsnkmk0i4wbOvbR5q/N1wGGsau",
       "addresses": [],
       "isActive": true,
-      "id": "cust-1791793712262-9pra0",
-      "createdAt": "2026-10-12T08:28:32.262Z",
-      "updatedAt": "2026-10-12T08:28:32.262Z"
+      "id": "cust-1793374312906-yzx8k",
+      "createdAt": "2026-10-30T15:31:52.906Z",
+      "updatedAt": "2026-10-30T15:31:52.906Z"
     },
     {
       "name": "Sumit Kumar",
-      "email": "sumitku97552509@gmail.com",
-      "phone": "8878112004",
-      "passwordHash": "$2a$10$4l10TdwX.FR.IiCooeT9Qe.qD8i9e0qr5qJ5ce3HUYPEP5byCRGL2",
+      "email": "sumantku120@gmail.com",
+      "phone": "8878112086",
+      "passwordHash": "$2a$10$sLVtWYp7vJSuevcm.pS2f.d5Osep22HdsqDkMRHBu7AnFNzo/01Ha",
       "addresses": [],
       "isActive": true,
-      "id": "cust-1792656181828-sodzo",
-      "createdAt": "2026-10-22T08:03:01.829Z",
-      "updatedAt": "2026-10-22T08:03:01.829Z"
+      "id": "cust-1793375558336-mlewm",
+      "createdAt": "2026-10-30T15:52:38.336Z",
+      "updatedAt": "2026-10-30T15:52:38.336Z"
     }
   ]
 }

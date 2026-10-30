@@ -15,7 +15,8 @@ import {
   Star,
   Users,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  Trash2,
 } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { Order, Product } from '@/lib/types';
@@ -52,6 +53,22 @@ export default function AdminDashboardPage() {
   const totalRevenue = orders.reduce((sum, o) => sum + (o.paymentStatus === 'PAID' ? o.totalAmount : 0), 0);
   const pendingOrders = orders.filter(o => o.orderStatus !== 'DELIVERED' && o.orderStatus !== 'CANCELLED');
   const lowStockProducts = products.filter(p => p.stock <= 20);
+
+  const handleClearOrders = async () => {
+    if (!confirm('Are you sure you want to remove all test orders? This action cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      });
+      if (res.ok) {
+        setOrders([]);
+      }
+    } catch (e) {
+      console.error('Failed to clear orders', e);
+    }
+  };
 
   const handleUpdateStatus = async (orderId: string, newStatus: Order['orderStatus']) => {
     try {
@@ -184,13 +201,24 @@ export default function AdminDashboardPage() {
               <h2 className="font-serif font-bold text-lg text-craft-950">Recent Customer Orders</h2>
               <p className="text-xs text-craft-500">Manage orders, update courier tracking, and update status</p>
             </div>
-            <Link
-              href="/admin/orders"
-              className="text-xs font-bold text-terracotta-700 hover:text-terracotta-800 flex items-center gap-1"
-            >
-              <span>View All Orders</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <div className="flex items-center gap-3">
+              {orders.length > 0 && (
+                <button
+                  onClick={handleClearOrders}
+                  className="text-xs font-semibold text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-xl border border-red-200 flex items-center gap-1 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear Test Orders</span>
+                </button>
+              )}
+              <Link
+                href="/admin/orders"
+                className="text-xs font-bold text-terracotta-700 hover:text-terracotta-800 flex items-center gap-1"
+              >
+                <span>View All Orders</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
           </div>
 
           <div className="overflow-x-auto">

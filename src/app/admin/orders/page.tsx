@@ -14,6 +14,7 @@ import {
   ExternalLink,
   Printer,
   MessageCircle,
+  Trash2,
 } from 'lucide-react';
 import { AdminSidebar } from '@/components/AdminSidebar';
 import { ShippingLabel } from '@/components/ShippingLabel';
@@ -51,6 +52,34 @@ export default function AdminOrdersPage() {
       console.error(e);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('Are you sure you want to delete this order?')) return;
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setOrders(prev => prev.filter(o => o.id !== orderId));
+      }
+    } catch (e) {
+      console.error('Failed to delete order', e);
+    }
+  };
+
+  const handleClearAllOrders = async () => {
+    if (!confirm('Are you sure you want to delete ALL test orders? This cannot be undone.')) return;
+    try {
+      const res = await fetch('/api/orders', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ all: true }),
+      });
+      if (res.ok) {
+        setOrders([]);
+      }
+    } catch (e) {
+      console.error('Failed to clear orders', e);
     }
   };
 
@@ -203,13 +232,24 @@ export default function AdminOrdersPage() {
             </p>
           </div>
 
-          <button
-            onClick={handleExportCSV}
-            className="bg-craft-900 hover:bg-craft-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors self-start sm:self-auto"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export Orders to CSV</span>
-          </button>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {orders.length > 0 && (
+              <button
+                onClick={handleClearAllOrders}
+                className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-xs font-bold px-3.5 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Clear All Test Orders</span>
+              </button>
+            )}
+            <button
+              onClick={handleExportCSV}
+              className="bg-craft-900 hover:bg-craft-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-1.5 shadow-sm transition-colors"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export Orders to CSV</span>
+            </button>
+          </div>
         </div>
 
         {/* Filters & Search */}
@@ -329,6 +369,14 @@ export default function AdminOrdersPage() {
                     >
                       <Printer className="w-3.5 h-3.5 text-terracotta-700" />
                       <span>Print Label</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleDeleteOrder(order.id)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 transition-colors shadow-sm"
+                      title="Delete Order"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

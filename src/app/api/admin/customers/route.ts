@@ -47,3 +47,31 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: 'Update failed' }, { status: 500 });
   }
 }
+
+// Admin can delete a customer or all customers
+export async function DELETE(request: NextRequest) {
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get('admin_token')?.value;
+    if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const admin = await verifyAdminToken(token);
+    if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const { customerId, all } = await request.json();
+    if (all || customerId === 'all') {
+      db.clearAllCustomers();
+      return NextResponse.json({ success: true, message: 'All customers cleared successfully' });
+    }
+
+    if (!customerId) {
+      return NextResponse.json({ error: 'customerId is required' }, { status: 400 });
+    }
+
+    const deleted = db.deleteCustomer(customerId);
+    if (!deleted) return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+
+    return NextResponse.json({ success: true, message: 'Customer deleted successfully' });
+  } catch {
+    return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
+  }
+}

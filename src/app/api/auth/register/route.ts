@@ -1,38 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { hashPassword, signCustomerToken } from '@/lib/auth';
+import { sanitizeInput, validatePasswordComplexity } from '@/lib/security';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, phone, password } = await request.json();
+    const clientIp = getClientIp(request);
+    const ipCheck = rateLimit(`register_ip_${clientIp}`, 10, 60 * 1000);
+    if (!ipCheck.success) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts from your IP. Please wait a minute.' },
+        { status: 429 }
+      );
+    }
+
+    const rawBody = await request.json();
+    const body = sanitizeInput(rawBody);
+    const { name, email, phone, password } = body;
 
     // Validation
     if (!name || !email || !phone || !password) {
       return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
     }
-    if (password.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 });
+
+    const complexity = validatePasswordComplexity(password);
+    if (!complexity.valid) {
+      return NextResponse.json({ error: complexity.message || 'Password does not meet security requirements' }, { status: 400 });
     }
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
+      return NextResponse.json({ error: 'Invalid email address format' }, { status: 400 });
     }
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
+
+    const phoneDigits = phone.replace(/[^0-9]/g, '');
+    if (phoneDigits.length < 10) {
       return NextResponse.json({ error: 'Enter a valid 10-digit Indian mobile number' }, { status: 400 });
     }
 
     // Check if already registered
-    const existing = db.getCustomerByEmail(email);
+    const cleanEmail = email.toLowerCase().trim();
+    const existing = db.getCustomerByEmail(cleanEmail);
     if (existing) {
-      return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
+      return NextResponse.json({ error: 'An account with this email already exists. Please log in.' }, { status: 409 });
+    }
+
+    const cleanPhone = phoneDigits.slice(-10);
+    const existingPhone = db.getCustomerByPhone(cleanPhone);
+    if (existingPhone) {
+      return NextResponse.json({ error: 'An account with this mobile number already exists. Please log in.' }, { status: 409 });
     }
 
     const passwordHash = await hashPassword(password);
     const customer = db.createCustomer({
       name: name.trim(),
-      email: email.toLowerCase().trim(),
-      phone: phone.replace(/\s/g, ''),
+      email: cleanEmail,
+      phone: cleanPhone,
       passwordHash,
       addresses: [],
       isActive: true,

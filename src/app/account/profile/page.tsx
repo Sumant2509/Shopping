@@ -8,14 +8,27 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function CustomerProfilePage() {
   const router = useRouter();
-  const { customer, logout, refreshCustomer } = useAuth();
+  const { customer, loading, logout, refreshCustomer } = useAuth();
   const [editing, setEditing] = useState(false);
   const [name, setName] = useState(customer?.name || '');
   const [phone, setPhone] = useState(customer?.phone || '');
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState('');
 
-  if (!customer) {
+  React.useEffect(() => {
+    if (!loading && !customer) {
+      router.replace('/account/login');
+    }
+  }, [loading, customer, router]);
+
+  React.useEffect(() => {
+    if (customer) {
+      setName(customer.name || '');
+      setPhone(customer.phone || '');
+    }
+  }, [customer]);
+
+  if (loading || !customer) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-craft-50">
         <div className="w-8 h-8 border-4 border-terracotta-400 border-t-transparent rounded-full animate-spin" />

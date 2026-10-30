@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { AdminSidebar } from '@/components/AdminSidebar';
-import { Users, ShoppingBag, Mail, Phone, UserCheck, UserX, Calendar, Search } from 'lucide-react';
+import { Users, ShoppingBag, Mail, Phone, UserCheck, UserX, Calendar, Search, Trash2 } from 'lucide-react';
 
 interface CustomerRow {
   id: string;
@@ -41,6 +41,26 @@ export default function AdminCustomersPage() {
     setTogglingId(null);
   };
 
+  const deleteCustomer = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this customer account?')) return;
+    await fetch('/api/admin/customers', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ customerId: id }),
+    });
+    await fetchCustomers();
+  };
+
+  const clearAll = async () => {
+    if (!confirm('Are you sure you want to delete ALL customer accounts from the database? This cannot be undone.')) return;
+    await fetch('/api/admin/customers', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ all: true }),
+    });
+    await fetchCustomers();
+  };
+
   const filtered = customers.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||
     c.email.toLowerCase().includes(search.toLowerCase()) ||
@@ -59,15 +79,26 @@ export default function AdminCustomersPage() {
             </h1>
             <p className="text-craft-400 text-sm mt-1">{customers.length} customer{customers.length !== 1 ? 's' : ''} registered</p>
           </div>
-          {/* Search */}
-          <div className="relative max-w-xs w-full">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-craft-500" />
-            <input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search name, email or phone…"
-              className="w-full pl-9 pr-3 py-2.5 bg-craft-900 border border-craft-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500 placeholder-craft-600"
-            />
+          <div className="flex items-center gap-3">
+            {customers.length > 0 && (
+              <button
+                onClick={clearAll}
+                className="px-3.5 py-2.5 bg-red-950/60 border border-red-800/80 text-red-400 hover:bg-red-900/80 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition-colors whitespace-nowrap"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Clear All Customers</span>
+              </button>
+            )}
+            {/* Search */}
+            <div className="relative max-w-xs w-full">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-craft-500" />
+              <input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search name, email or phone…"
+                className="w-full pl-9 pr-3 py-2.5 bg-craft-900 border border-craft-800 rounded-xl text-xs text-white focus:outline-none focus:border-amber-500 placeholder-craft-600"
+              />
+            </div>
           </div>
         </div>
 
@@ -152,17 +183,26 @@ export default function AdminCustomersPage() {
                       </td>
                       {/* Action */}
                       <td className="px-4 py-3.5 text-center">
-                        <button
-                          onClick={() => toggleStatus(customer.id, customer.isActive)}
-                          disabled={togglingId === customer.id}
-                          className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50 ${
-                            customer.isActive
-                              ? 'bg-red-900/30 text-red-400 hover:bg-red-900/60'
-                              : 'bg-green-900/30 text-green-400 hover:bg-green-900/60'
-                          }`}
-                        >
-                          {togglingId === customer.id ? '…' : customer.isActive ? 'Disable' : 'Enable'}
-                        </button>
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => toggleStatus(customer.id, customer.isActive)}
+                            disabled={togglingId === customer.id}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-colors disabled:opacity-50 ${
+                              customer.isActive
+                                ? 'bg-red-900/30 text-red-400 hover:bg-red-900/60'
+                                : 'bg-green-900/30 text-green-400 hover:bg-green-900/60'
+                            }`}
+                          >
+                            {togglingId === customer.id ? '…' : customer.isActive ? 'Disable' : 'Enable'}
+                          </button>
+                          <button
+                            onClick={() => deleteCustomer(customer.id)}
+                            title="Delete Customer"
+                            className="p-1.5 text-craft-500 hover:text-red-400 hover:bg-red-900/30 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

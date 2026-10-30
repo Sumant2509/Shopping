@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { db } from '@/lib/db';
 import { hashPassword, verifyAdminToken } from '@/lib/auth';
+import { sanitizeInput, validatePasswordComplexity } from '@/lib/security';
 import { AdminRole } from '@/lib/types';
 
 // Helper to sanitize admin user for response (exclude passwordHash)
@@ -19,11 +21,19 @@ function sanitizeAdmin(admin: any) {
   };
 }
 
-export async function GET(request: Request) {
+async function getSuperAdminSession() {
+  const cookieStore = await cookies();
+  const adminToken = cookieStore.get('admin_token')?.value;
+  if (!adminToken) return null;
+  const session = await verifyAdminToken(adminToken);
+  if (!session || session.role !== 'superadmin') return null;
+  return session;
+}
+
+export async function GET() {
   try {
-    const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
-    const session = adminToken ? await verifyAdminToken(adminToken) : null;
-    if (!session || session.role !== 'superadmin') {
+    const session = await getSuperAdminSession();
+    if (!session) {
       return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
@@ -40,13 +50,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
-    const session = adminToken ? await verifyAdminToken(adminToken) : null;
-    if (!session || session.role !== 'superadmin') {
+    const session = await getSuperAdminSession();
+    if (!session) {
       return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeInput(rawBody);
     const { name, username, email, phone, role, password } = body;
 
     if (!name || !username || !email || !password) {
@@ -54,6 +64,11 @@ export async function POST(request: Request) {
         { error: 'Name, Username, Email, and Password are required' },
         { status: 400 }
       );
+    }
+
+    const complexity = validatePasswordComplexity(password);
+    if (!complexity.valid) {
+      return NextResponse.json({ error: complexity.message || 'Password does not meet security requirements' }, { status: 400 });
     }
 
     // Check for existing user
@@ -95,13 +110,13 @@ export async function POST(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
-    const session = adminToken ? await verifyAdminToken(adminToken) : null;
-    if (!session || session.role !== 'superadmin') {
+    const session = await getSuperAdminSession();
+    if (!session) {
       return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeInput(rawBody);
     const { id, name, username, email, phone, role, password, isActive } = body;
 
     if (!id) {
@@ -116,6 +131,10 @@ export async function PUT(request: Request) {
     if (role && ['superadmin', 'manager', 'support'].includes(role)) updates.role = role;
     if (typeof isActive === 'boolean') updates.isActive = isActive;
     if (password && password.trim().length > 0) {
+      const complexity = validatePasswordComplexity(password.trim());
+      if (!complexity.valid) {
+        return NextResponse.json({ error: complexity.message || 'Password does not meet security requirements' }, { status: 400 });
+      }
       updates.passwordHash = await hashPassword(password.trim());
     }
 
@@ -137,9 +156,8 @@ export async function PUT(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const adminToken = request.headers.get('cookie')?.split('admin_token=')[1]?.split(';')[0];
-    const session = adminToken ? await verifyAdminToken(adminToken) : null;
-    if (!session || session.role !== 'superadmin') {
+    const session = await getSuperAdminSession();
+    if (!session) {
       return NextResponse.json({ error: 'Forbidden: Super Admin access required' }, { status: 403 });
     }
 

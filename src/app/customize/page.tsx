@@ -2,9 +2,11 @@
 
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useCart } from '@/lib/cart-context';
+import { generateCustomFlowerSvgDataUrl, getFriendlyColorSummary } from '@/lib/custom-mat-svg';
 import {
   Sparkles,
   ShoppingBag,
@@ -23,19 +25,15 @@ import {
   Info,
   CheckCircle2,
   Heart,
-  Share2
+  Share2,
+  ArrowRight,
 } from 'lucide-react';
 
 // Radial petal count options
 const PETAL_COUNT_OPTIONS = [
-  { count: 2, label: '2 Petals (Dual Split)', desc: 'Half & half 2-color split (Photo 4 Style)', badge: 'Dual Tone' },
-  { count: 4, label: '4 Petals (Quad Bloom)', desc: 'Balanced 4-quarter floral motif', badge: 'Classic' },
-  { count: 5, label: '5 Petals (5-Star Pent)', desc: 'Signature 5-petal star bloom (Photo 3 Style)', badge: 'Popular' },
-  { count: 6, label: '6 Petals (Flower Hex)', desc: 'Vibrant 6-slice braided mat (Photo 2 Style)', badge: 'Best Seller' },
+  { count: 6, label: '6 Petals (Flower Hex)', desc: 'Vibrant 6-slice braided mat (Photo Style)', badge: 'Best Seller' },
   { count: 8, label: '8 Petals (Octa Star)', desc: 'Symmetrical 8-point blossom', badge: 'Mandala' },
   { count: 10, label: '10 Petals (Deca Star)', desc: 'Dense 10-petal radial weave', badge: 'Intricate' },
-  { count: 12, label: '12 Petals (Sunburst)', desc: '12-pointed radial sunburst flower', badge: 'Classic' },
-  { count: 16, label: '16 Petals (Fiesta Bloom)', desc: 'Ultra-dense multi-color burst (Photo 1 Style)', badge: 'Masterpiece' },
 ];
 
 // Rich Yarn Color Swatches
@@ -58,37 +56,30 @@ const YARN_SWATCHES = [
   { name: 'Wine Plum', hex: '#831843', group: 'Royal', desc: 'Luxurious velvet plum' },
 ];
 
-// Photo-accurate Presets matching the user's uploaded images
+// Photo-accurate Presets matching our handcrafted styles
 const PHOTO_PRESETS = [
   {
-    id: 'photo-3-pastel',
-    name: '🌸 5-Petal Pastel Bloom (Photo 3)',
-    desc: 'Sky blue, pastel pink, olive lime, warm yellow & regal purple',
-    count: 5,
-    palette: ['#0ea5e9', '#f472b6', '#84cc16', '#eab308', '#6b21a8'],
-  },
-  {
     id: 'photo-2-rainbow',
-    name: '🎨 6-Petal Multicolor Braid (Photo 2)',
+    name: '🎨 6-Petal Multicolor Braid',
     desc: 'Royal purple, sunshine gold, cobalt blue, terracotta red, lime & candy pink',
     count: 6,
     palette: ['#6b21a8', '#eab308', '#1d4ed8', '#b91c1c', '#84cc16', '#ec4899'],
   },
   {
-    id: 'photo-4-dual',
-    name: '🌊 Dual-Tone Wave (Photo 4)',
-    desc: 'Sunshine gold & sky cyan half-and-half contrast',
-    count: 2,
-    palette: ['#eab308', '#0ea5e9'],
+    id: 'preset-mandala-8',
+    name: '🌸 8-Petal Mandala Bloom',
+    desc: 'Sky blue, pastel pink, olive lime, warm yellow, purple & terracotta',
+    count: 8,
+    palette: ['#0ea5e9', '#f472b6', '#84cc16', '#eab308', '#6b21a8', '#ec4899', '#10b981', '#b91c1c'],
   },
   {
-    id: 'photo-1-fiesta',
-    name: '🌟 16-Petal Fiesta Burst (Photo 1)',
-    desc: 'Multi-hue festive gradient with pinks, greens, ochres & terracotta',
-    count: 16,
+    id: 'preset-deca-10',
+    name: '🌟 10-Petal Royal Starburst',
+    desc: 'Intricate 10-petal festive radial burst with jewel tones',
+    count: 10,
     palette: [
-      '#ec4899', '#84cc16', '#b91c1c', '#d97706', '#78350f', '#ec4899', '#10b981', '#6b21a8',
-      '#ea580c', '#0ea5e9', '#fef3c7', '#b91c1c', '#eab308', '#84cc16', '#831843', '#0d9488'
+      '#ec4899', '#84cc16', '#b91c1c', '#d97706', '#6b21a8',
+      '#0ea5e9', '#eab308', '#10b981', '#ea580c', '#1d4ed8'
     ],
   },
   {
@@ -104,24 +95,32 @@ const PHOTO_PRESETS = [
     desc: 'Deep indigo, peacock teal, emerald & gold',
     count: 6,
     palette: ['#1d4ed8', '#0d9488', '#10b981', '#eab308', '#6b21a8', '#0ea5e9'],
+  },
+  {
+    id: 'preset-pastel-8',
+    name: '🌼 8-Petal Spring Pastel',
+    desc: 'Soft pastel blossom with pink, sky blue, cream & lime',
+    count: 8,
+    palette: ['#f472b6', '#0ea5e9', '#fef3c7', '#84cc16', '#f472b6', '#0ea5e9', '#fef3c7', '#84cc16'],
   }
 ];
 
-// Mat Size Options
+// Mat Size Options with explicit starting minimum price ₹559 (+ GST + Shipping)
 const SIZE_PRESETS = [
-  { diameter: 18, label: '18" Compact', cm: '45.7 cm', priceMod: 0.9, useCase: 'Bedside & Bathroom' },
-  { diameter: 20, label: '20" Signature Standard (Photo Size)', cm: '50.0 cm', priceMod: 1.0, isPopular: true, useCase: 'Main Entrance & Doorway' },
-  { diameter: 22, label: '22" Medium Starburst', cm: '55.8 cm', priceMod: 1.15, useCase: 'Living Foyer & Kitchen' },
-  { diameter: 24, label: '24" Large Bloom', cm: '61.0 cm', priceMod: 1.35, useCase: 'Pooja Room & Balcony' },
-  { diameter: 28, label: '28" Grand Entryway', cm: '71.1 cm', priceMod: 1.75, useCase: 'Grand Entrance & Lounge' },
+  { diameter: 18, label: '18" Compact', cm: '45.7 cm', basePrice: 559, mrp: 899, isMinimum: true, useCase: 'Bedside & Bathroom' },
+  { diameter: 20, label: '20" Signature Standard (Photo Size)', cm: '50.0 cm', basePrice: 649, mrp: 1049, isPopular: true, useCase: 'Main Entrance & Doorway' },
+  { diameter: 22, label: '22" Medium Starburst', cm: '55.8 cm', basePrice: 749, mrp: 1199, useCase: 'Living Foyer & Kitchen' },
+  { diameter: 24, label: '24" Large Bloom', cm: '61.0 cm', basePrice: 899, mrp: 1449, useCase: 'Pooja Room & Balcony' },
+  { diameter: 28, label: '28" Grand Entryway', cm: '71.1 cm', basePrice: 1199, mrp: 1929, useCase: 'Grand Entrance & Lounge' },
 ];
 
 export default function CustomizePage() {
+  const router = useRouter();
   const { addItem, setIsCartDrawerOpen } = useCart();
 
   // 1. Radial Petals State
   const [petalCount, setPetalCount] = useState<number>(6);
-  const [pointColors, setPointColors] = useState<string[]>(() => PHOTO_PRESETS[1].palette);
+  const [pointColors, setPointColors] = useState<string[]>(() => PHOTO_PRESETS[0].palette);
   const [activePetalIndex, setActivePetalIndex] = useState<number>(0);
   const [isSingleColorMode, setIsSingleColorMode] = useState(false);
 
@@ -131,7 +130,7 @@ export default function CustomizePage() {
   const [showRibs, setShowRibs] = useState(true);
 
   // 3. Size & Details
-  const [selectedSize, setSelectedSize] = useState(SIZE_PRESETS[1]); // 20" Signature Standard
+  const [selectedSize, setSelectedSize] = useState(SIZE_PRESETS[0]); // 18" Compact (Minimum Size)
   const [thickness, setThickness] = useState('0.6 cm / 6mm - 10mm (High-Density Braided Cushion)');
   const [customText, setCustomText] = useState('');
   const [addedSuccess, setAddedSuccess] = useState(false);
@@ -173,26 +172,26 @@ export default function CustomizePage() {
     setPointColors(shuffled);
   };
 
-  // Price Calculation
-  const basePrice = 449;
-  const computedPrice = Math.round(basePrice * selectedSize.priceMod + (customText.trim() ? 99 : 0));
-  const computedMrp = Math.round(computedPrice * 1.65);
+  // Price Calculation - Minimum starting price ₹559 (+ GST + Shipping)
+  const tagCost = customText.trim() ? 99 : 0;
+  const computedPrice = selectedSize.basePrice + tagCost;
+  const computedMrp = selectedSize.mrp + (tagCost ? 150 : 0);
   const savings = computedMrp - computedPrice;
+  const discountPercent = Math.round(((computedMrp - computedPrice) / computedMrp) * 100);
 
-  // Add to Cart handler
-  const handleAddToCart = () => {
-    const uniqueColorNames = Array.from(
-      new Set(pointColors.map((hex) => YARN_SWATCHES.find((s) => s.hex === hex)?.name || hex))
-    );
+  // Build custom item object with 100% exact vector preview and friendly yarn names
+  const createCustomItem = () => {
+    const svgDataUrl = generateCustomFlowerSvgDataUrl(petalCount, pointColors);
+    const friendlyColorSummary = getFriendlyColorSummary(pointColors);
 
-    const customItem = {
+    return {
       id: `custom-flower-${Date.now()}`,
       name: `Custom ${petalCount}-Petal Handcrafted Flower Doormat (${selectedSize.diameter}")`,
       slug: 'custom-handcrafted-flower-doormat',
-      description: `Handcrafted ${petalCount}-petal scalloped flower doormat custom braided with pure cotton textile yarn in ${uniqueColorNames.join(', ')}. Features anti-slip backing, washable fabric, and high-density cushioning.`,
+      description: `Handcrafted ${petalCount}-petal scalloped flower doormat custom braided with pure cotton textile yarn in ${friendlyColorSummary}. Features anti-slip backing, washable fabric, and high-density cushioning.`,
       price: computedPrice,
       mrp: computedMrp,
-      discountPercent: Math.round(((computedMrp - computedPrice) / computedMrp) * 100),
+      discountPercent: discountPercent,
       shape: 'flower' as const,
       dimensions: `Diameter: ${selectedSize.diameter} inches / ${selectedSize.cm}`,
       thickness: thickness,
@@ -200,7 +199,7 @@ export default function CustomizePage() {
       washability: 'Hand Washable & Gentle Machine Washable',
       craftType: `Handmade ${petalCount}-Petal Scalloped Flower Braid`,
       colors: pointColors,
-      images: ['/images/starburst_doormat.png'],
+      images: [svgDataUrl, '/images/starburst_doormat.png'],
       stock: 99,
       sku: `SKM-FLW-${petalCount}P-${selectedSize.diameter}`,
       category: 'Custom Flower Doormats',
@@ -213,16 +212,28 @@ export default function CustomizePage() {
         `Size: ${selectedSize.diameter}" Diameter (${selectedSize.cm})`,
         `Cushion Thickness: ${thickness}`,
         `Anti-Slip Grip Base: Yes, Non-Skid Backing`,
-        `Yarn Colors (${uniqueColorNames.length}): ${uniqueColorNames.join(', ')}`,
+        `Yarn Colors (${pointColors.length} Petals): ${friendlyColorSummary}`,
         customText ? `Custom Inscribed Tag: "${customText}"` : 'Handcrafted without tag',
       ],
       createdAt: new Date().toISOString(),
     };
+  };
 
+  // Add to Cart handler (shows cart drawer with easy exit option)
+  const handleAddToCart = () => {
+    const customItem = createCustomItem();
     addItem(customItem, 1, pointColors.join(','));
     setAddedSuccess(true);
     setTimeout(() => setAddedSuccess(false), 3000);
     setIsCartDrawerOpen(true);
+  };
+
+  // Direct Order / Buy Now (bypasses cart drawer and opens checkout directly)
+  const handleBuyNow = () => {
+    const customItem = createCustomItem();
+    addItem(customItem, 1, pointColors.join(','));
+    setIsCartDrawerOpen(false);
+    router.push('/checkout');
   };
 
   // SVG Geometry Calculation for realistic scalloped flower petals with multi-tooth jagged tips
@@ -322,7 +333,7 @@ export default function CustomizePage() {
             Design Your Custom Flower Petal Doormat
           </h1>
           <p className="mt-3 text-sm sm:text-base text-craft-600">
-            Handcrafted with 100% braided cotton yarn. Pick your petal count (2 to 16 petals), choose vibrant yarn colors, and preview on marble floors in real time!
+            Handcrafted with 100% braided cotton yarn. Pick your petal count (6, 8, or 10 petals), choose vibrant yarn colors, and preview on marble floors in real time!
           </p>
         </div>
 
@@ -661,25 +672,25 @@ export default function CustomizePage() {
                 <Layers className="w-4 h-4 text-terracotta-700" /> 2. Choose Number of Flower Petals
               </label>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {PETAL_COUNT_OPTIONS.map((opt) => (
                   <button
                     key={opt.count}
                     type="button"
                     onClick={() => handlePetalCountChange(opt.count)}
-                    className={`p-3 rounded-2xl border text-left transition-all relative ${
+                    className={`p-3.5 rounded-2xl border text-left transition-all relative ${
                       petalCount === opt.count
                         ? 'border-terracotta-600 bg-amber-50/90 ring-2 ring-terracotta-500/30 shadow-sm'
                         : 'border-craft-200 hover:border-craft-300 bg-white'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-xs text-craft-950">{opt.count} Petals</span>
-                      {petalCount === opt.count && <Check className="w-3.5 h-3.5 text-terracotta-700" />}
+                      <span className="font-bold text-xs sm:text-sm text-craft-950">{opt.count} Petals</span>
+                      {petalCount === opt.count && <Check className="w-4 h-4 text-terracotta-700" />}
                     </div>
-                    <span className="text-[10px] text-craft-500 block mt-0.5 truncate">{opt.desc}</span>
+                    <span className="text-[11px] text-craft-500 block mt-1">{opt.desc}</span>
                     {opt.badge && (
-                      <span className="inline-block mt-1.5 px-1.5 py-0.5 bg-craft-200/80 text-craft-800 rounded text-[9px] font-bold uppercase tracking-wider">
+                      <span className="inline-block mt-2 px-2 py-0.5 bg-craft-200/80 text-craft-800 rounded text-[9px] font-bold uppercase tracking-wider">
                         {opt.badge}
                       </span>
                     )}
@@ -810,9 +821,15 @@ export default function CustomizePage() {
                   >
                     <div className="flex items-center justify-between">
                       <span className="font-bold text-xs text-craft-950">{sz.label}</span>
-                      {selectedSize.diameter === sz.diameter && <Check className="w-3.5 h-3.5 text-terracotta-700" />}
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-bold text-xs text-terracotta-800 font-mono">₹{sz.basePrice}</span>
+                        {selectedSize.diameter === sz.diameter && <Check className="w-3.5 h-3.5 text-terracotta-700" />}
+                      </div>
                     </div>
-                    <span className="text-xs text-terracotta-700 font-mono font-bold block mt-0.5">{sz.cm}</span>
+                    <div className="flex items-center justify-between text-[11px] mt-0.5">
+                      <span className="text-terracotta-700 font-mono font-semibold">{sz.cm}</span>
+                      <span className="text-[10px] text-craft-500 font-medium">+ GST + Shipping</span>
+                    </div>
                     <span className="text-[10px] text-craft-500 block mt-1">Best for: {sz.useCase}</span>
                   </button>
                 ))}
@@ -843,30 +860,44 @@ export default function CustomizePage() {
                   <span className="text-xs text-amber-300 uppercase font-bold tracking-wider block">
                     Custom Craft Price Quote
                   </span>
-                  <div className="flex items-baseline gap-2.5 mt-1">
+                  <div className="flex flex-wrap items-baseline gap-2 mt-1">
                     <span className="font-serif font-bold text-3xl sm:text-4xl text-white">
                       ₹{computedPrice}
+                    </span>
+                    <span className="text-xs text-amber-300 font-bold bg-amber-950/80 border border-amber-600/50 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                      + GST + Shipping
                     </span>
                     <span className="text-sm text-craft-400 line-through">
                       ₹{computedMrp}
                     </span>
                     <span className="text-xs bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-bold">
-                      Save ₹{savings} (38% OFF)
+                      Save ₹{savings} ({discountPercent}% OFF)
                     </span>
                   </div>
-                  <span className="text-[11px] text-craft-400 block mt-1">
-                    Includes GST, Free Pan-India Delivery & Cash on Delivery Available
+                  <span className="text-[11px] text-craft-300 block mt-1.5 font-medium">
+                    Base craft price ₹{computedPrice} • Applicable GST & Shipping calculated at checkout • Cash on Delivery Available
                   </span>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  className="w-full sm:w-auto bg-gradient-to-r from-terracotta-600 via-amber-600 to-terracotta-600 hover:from-terracotta-700 hover:to-amber-700 text-white font-bold px-8 py-4 rounded-2xl text-sm shadow-warm flex items-center justify-center gap-2.5 transition-all shrink-0 active:scale-95"
-                >
-                  <ShoppingBag className="w-5 h-5" />
-                  <span>{addedSuccess ? '✓ Added to Cart!' : 'Add Custom Mat to Cart'}</span>
-                </button>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="bg-craft-800 hover:bg-craft-700 text-white font-bold px-5 py-3.5 rounded-2xl text-xs sm:text-sm border border-craft-700 flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer shadow-sm"
+                  >
+                    <ShoppingBag className="w-4 h-4" />
+                    <span>{addedSuccess ? '✓ Added to Cart!' : 'Add to Cart'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleBuyNow}
+                    className="bg-gradient-to-r from-terracotta-600 via-amber-600 to-terracotta-600 hover:from-terracotta-700 hover:to-amber-700 text-white font-bold px-7 py-3.5 rounded-2xl text-xs sm:text-sm shadow-warm flex items-center justify-center gap-2 transition-all active:scale-95 cursor-pointer"
+                  >
+                    <span>Order Now (₹{computedPrice})</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Quality Guarantee Note */}

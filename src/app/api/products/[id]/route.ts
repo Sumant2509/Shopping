@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyAdminToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { sanitizeInput } from '@/lib/security';
 
 export async function GET(
   request: Request,
@@ -20,7 +21,7 @@ export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
   if (!token || !(await verifyAdminToken(token))) {
@@ -28,7 +29,8 @@ export async function PUT(
   }
 
   try {
-    const updates = await request.json();
+    const rawUpdates = await request.json();
+    const updates = sanitizeInput(rawUpdates);
     const updated = db.updateProduct(params.id, updates);
     if (!updated) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
@@ -43,7 +45,7 @@ export async function DELETE(
   request: Request,
   { params }: { params: { id: string } }
 ) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
   if (!token || !(await verifyAdminToken(token))) {

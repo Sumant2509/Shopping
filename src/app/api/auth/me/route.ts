@@ -13,12 +13,16 @@ export async function GET(request: NextRequest) {
 
     const payload = await verifyCustomerToken(token);
     if (!payload) {
-      return NextResponse.json({ authenticated: false }, { status: 401 });
+      const res = NextResponse.json({ authenticated: false }, { status: 401 });
+      res.cookies.delete('customer_token');
+      return res;
     }
 
     const customer = db.getCustomerById(payload.id);
     if (!customer || !customer.isActive) {
-      return NextResponse.json({ authenticated: false }, { status: 401 });
+      const res = NextResponse.json({ authenticated: false }, { status: 401 });
+      res.cookies.delete('customer_token');
+      return res;
     }
 
     return NextResponse.json({

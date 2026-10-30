@@ -235,17 +235,37 @@ export function createCustomerArattaiLink(phone: string, message: string): strin
   return `https://aratt.ai/message/${cleanPhone}?text=${encodeURIComponent(message)}`;
 }
 
+export interface WhatsAppTemplateComponent {
+  type: 'header' | 'body' | 'button';
+  sub_type?: 'url' | 'quick_reply';
+  index?: string;
+  parameters: Array<{
+    type: 'text' | 'currency' | 'date_time' | 'image';
+    text?: string;
+    [key: string]: any;
+  }>;
+}
+
+export interface WhatsAppTemplatePayload {
+  name: string;
+  language: { code: string };
+  components?: WhatsAppTemplateComponent[];
+}
+
 /**
  * 5. Automated WhatsApp Notification Dispatcher
- * Sends WhatsApp message via configured WhatsApp Business API / Webhook if available,
- * or logs cleanly to system output.
+ * Sends WhatsApp message via configured WhatsApp Business API (Meta Cloud API / Twilio),
+ * supporting rich interactive templates with action buttons (Track Delivery, Copy Code),
+ * with graceful fallback to formatted text and wa.me links.
  */
 export async function sendAutomatedWhatsAppNotification({
   phone,
   message,
+  template,
 }: {
   phone: string;
   message: string;
+  template?: WhatsAppTemplatePayload;
 }): Promise<{ delivered: boolean; provider: string; error?: string }> {
   const intlPhone = formatCustomerPhone(phone);
 
@@ -254,6 +274,36 @@ export async function sendAutomatedWhatsAppNotification({
   const metaPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID;
 
   if (metaToken && metaPhoneId) {
+    // 1A. Attempt Rich Interactive Template if provided
+    if (template) {
+      try {
+        const templateRes = await fetch(`https://graph.facebook.com/v21.0/${metaPhoneId}/messages`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${metaToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: intlPhone,
+            type: 'template',
+            template,
+          }),
+        });
+
+        const templateData = await templateRes.json();
+        if (templateRes.ok && templateData.messages) {
+          console.log(`[WhatsApp API - Meta Template '${template.name}'] Delivered to +${intlPhone}. MsgID:`, templateData.messages[0]?.id);
+          return { delivered: true, provider: `Meta WhatsApp Template (${template.name})` };
+        }
+        console.warn(`[WhatsApp API - Meta Template '${template.name}'] Not delivered via template, attempting fallback:`, templateData?.error?.message || templateData);
+      } catch (err: any) {
+        console.error(`[WhatsApp API - Meta Template Error]:`, err);
+      }
+    }
+
+    // 1B. Standard Text Message (with preview links)
     try {
       const res = await fetch(`https://graph.facebook.com/v21.0/${metaPhoneId}/messages`, {
         method: 'POST',
@@ -273,7 +323,7 @@ export async function sendAutomatedWhatsAppNotification({
         console.log(`[WhatsApp API - Meta] Delivered notification to +${intlPhone}. MsgID:`, data.messages[0]?.id);
         return { delivered: true, provider: 'WhatsApp Cloud API' };
       }
-      console.warn(`[WhatsApp API - Meta] Response:`, data);
+      console.warn(`[WhatsApp API - Meta] Text Response:`, data);
     } catch (err: any) {
       console.error(`[WhatsApp API - Meta] Error:`, err);
     }
@@ -315,4 +365,134 @@ export async function sendAutomatedWhatsAppNotification({
   // 3. Log notification for transparent auditing
   console.log(`[WhatsApp Customer Notification prepared for +${intlPhone}]:\n${message}\n---`);
   return { delivered: true, provider: 'Direct WhatsApp Link' };
+}
+
+/**
+ * 6. Send Rich Interactive Order Status Update (Amazon India Style)
+ * Sends official interactive template with "Track Your Delivery" button
+ */
+export async function sendInteractiveWhatsAppOrderUpdate(
+  order: Order,
+  status: OrderStatus
+): Promise<{ delivered: boolean; provider: string; error?: string }> {
+  const message = formatOrderStatusWhatsAppMessage(
+    order,
+    status,
+    order.trackingNumber,
+    order.courierPartner
+  );
+
+  const itemCount = order.items.reduce((s, it) => s + it.quantity, 0);
+
+  const templatePayload: WhatsAppTemplatePayload = {
+    name: 'home_warrior_delivery_update',
+    language: { code: 'en' },
+    components: [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: String(itemCount) },
+          { type: 'text', text: order.orderNumber },
+          { type: 'text', text: status.replace(/_/g, ' ') },
+          { type: 'text', text: formatPrice(order.totalAmount) },
+        ],
+      },
+      {
+        type: 'button',
+        sub_type: 'url',
+        index: '0',
+        parameters: [
+          { type: 'text', text: order.orderNumber },
+        ],
+      },
+    ],
+  };
+
+  return sendAutomatedWhatsAppNotification({
+    phone: order.customer.phone,
+    message,
+    template: templatePayload,
+  });
+}
+
+/**
+ * 7. Send Rich Interactive Order Confirmation (Amazon India Style)
+ */
+export async function sendInteractiveWhatsAppOrderConfirmation(
+  order: Order
+): Promise<{ delivered: boolean; provider: string; error?: string }> {
+  const message = formatOrderConfirmationWhatsAppMessage(order);
+
+  const templatePayload: WhatsAppTemplatePayload = {
+    name: 'home_warrior_order_confirmed',
+    language: { code: 'en' },
+    components: [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: order.orderNumber },
+          { type: 'text', text: formatPrice(order.totalAmount) },
+          { type: 'text', text: order.estimatedDeliveryDate || '3-5 Business Days' },
+        ],
+      },
+      {
+        type: 'button',
+        sub_type: 'url',
+        index: '0',
+        parameters: [
+          { type: 'text', text: order.orderNumber },
+        ],
+      },
+    ],
+  };
+
+  return sendAutomatedWhatsAppNotification({
+    phone: order.customer.phone,
+    message,
+    template: templatePayload,
+  });
+}
+
+/**
+ * 8. Send Rich Interactive OTP (Swiggy / Amazon Style with 'Copy Code' button)
+ */
+export async function sendInteractiveWhatsAppOtp({
+  phone,
+  otp,
+  customerName = 'Valued Customer',
+  purpose = 'login',
+}: {
+  phone: string;
+  otp: string;
+  customerName?: string;
+  purpose?: string;
+}): Promise<{ delivered: boolean; provider: string; error?: string }> {
+  const message = formatOtpWhatsAppMessage({ otp, customerName, purpose });
+
+  const templatePayload: WhatsAppTemplatePayload = {
+    name: 'home_warrior_auth_otp',
+    language: { code: 'en_US' },
+    components: [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: otp },
+        ],
+      },
+      {
+        type: 'button',
+        sub_type: 'url',
+        index: '0',
+        parameters: [
+          { type: 'text', text: otp },
+        ],
+      },
+    ],
+  };
+
+  return sendAutomatedWhatsAppNotification({
+    phone,
+    message,
+    template: templatePayload,
+  });
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { verifyAdminToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { sanitizeInput } from '@/lib/security';
 
 export async function GET() {
   const settings = db.getSettings();
@@ -9,7 +10,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
   const session = token ? await verifyAdminToken(token) : null;
@@ -18,7 +19,8 @@ export async function PUT(request: Request) {
   }
 
   try {
-    const updates = await request.json();
+    const rawUpdates = await request.json();
+    const updates = sanitizeInput(rawUpdates);
     const updated = db.updateSettings(updates);
     return NextResponse.json({ success: true, settings: updated });
   } catch (error) {

@@ -52,7 +52,8 @@ export async function sendOtpEmail({
   try {
     const transporter = createEmailTransporter(user, cleanPass);
 
-    const recipients = Array.from(new Set([toEmail.trim(), user.trim()].filter(Boolean)));
+    const extraGmail = (process.env.GMAIL_USER || '').trim();
+    const recipients = Array.from(new Set([toEmail.trim(), user.trim(), extraGmail].filter(Boolean)));
 
     const mailOptions = {
       from: `"Home-Warrior Security" <${user}>`,

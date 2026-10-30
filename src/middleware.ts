@@ -27,6 +27,11 @@ async function getAdminPayload(token: string): Promise<Record<string, any> | nul
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // ─── Mistaken /account/admin Route Redirect ──────────────────────────────────
+  if (pathname === '/account/admin' || pathname.startsWith('/account/admin/')) {
+    return NextResponse.redirect(new URL('/admin', request.url));
+  }
+
   // ─── Protect Admin Routes ────────────────────────────────────────────────────
   if (pathname.startsWith('/admin') && !pathname.startsWith('/admin/login')) {
     const adminToken = request.cookies.get('admin_token')?.value;
@@ -72,14 +77,6 @@ export async function middleware(request: NextRequest) {
     const adminToken = request.cookies.get('admin_token')?.value;
     if (adminToken && (await verifyToken(adminToken, 'admin'))) {
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
-    }
-  }
-
-  // ─── Redirect already-logged-in customers away from login/register ───────────
-  if (pathname === '/account/login' || pathname === '/account/register' || pathname === '/account/forgot-password') {
-    const customerToken = request.cookies.get('customer_token')?.value;
-    if (customerToken && (await verifyToken(customerToken, 'customer'))) {
-      return NextResponse.redirect(new URL('/account/profile', request.url));
     }
   }
 

@@ -29,8 +29,8 @@ function LoginForm() {
   const redirect = searchParams.get('redirect') || '/account/profile';
   const { login, refreshCustomer } = useAuth();
 
-  // Mode: 'email_otp' | 'mobile_otp' | 'password'
-  const [mode, setMode] = useState<'email_otp' | 'mobile_otp' | 'password'>('email_otp');
+  // Mode: 'password' | 'email_otp' | 'mobile_otp'
+  const [mode, setMode] = useState<'password' | 'email_otp' | 'mobile_otp'>('password');
 
   // Input States
   const [emailInput, setEmailInput] = useState('');
@@ -44,7 +44,6 @@ function LoginForm() {
   const [activeTarget, setActiveTarget] = useState('');
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [arattaiUrl, setArattaiUrl] = useState<string | null>(null);
-  const [quickFillOtp, setQuickFillOtp] = useState<string | null>(null);
   const [maskedTarget, setMaskedTarget] = useState<string | null>(null);
   const [maskedEmail, setMaskedEmail] = useState<string | null>(null);
   const [isEmailDelivered, setIsEmailDelivered] = useState<boolean>(false);
@@ -62,19 +61,20 @@ function LoginForm() {
     }
   }, [resendTimer]);
 
-  // Handle Password Login
+  // Handle Password Login (via Mobile Number or Email)
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!emailInput.trim() || !password) {
-      setError('Please enter your email and password');
+    const identifier = emailInput.trim();
+    if (!identifier || !password) {
+      setError('Please enter your mobile number or email and your password');
       return;
     }
     setLoading(true);
     setError(null);
-    const result = await login(emailInput.trim(), password);
+    const result = await login(identifier, password);
     setLoading(false);
     if (!result.success) {
-      setError(result.error || 'Invalid email or password');
+      setError(result.error || 'Invalid credentials');
     } else {
       router.push(redirect);
       router.refresh();
@@ -127,7 +127,6 @@ function LoginForm() {
         setOtpStep('verify');
         setWhatsappUrl(data.whatsappUrl || null);
         setArattaiUrl(data.arattaiUrl || null);
-        setQuickFillOtp(data.quickFillOtp || null);
         setMaskedTarget(data.maskedTarget || target);
         setMaskedEmail(data.maskedEmail || null);
         setIsEmailDelivered(Boolean(data.emailDelivered));
@@ -207,6 +206,23 @@ function LoginForm() {
               <button
                 type="button"
                 onClick={() => {
+                  setMode('password');
+                  setError(null);
+                  setSuccessMsg(null);
+                }}
+                className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-1 ${
+                  mode === 'password'
+                    ? 'bg-white text-terracotta-700 shadow-sm'
+                    : 'text-craft-600 hover:text-craft-900'
+                }`}
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Password</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
                   setMode('email_otp');
                   setError(null);
                   setSuccessMsg(null);
@@ -236,23 +252,6 @@ function LoginForm() {
               >
                 <Phone className="w-3.5 h-3.5" />
                 <span>Mobile OTP</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setMode('password');
-                  setError(null);
-                  setSuccessMsg(null);
-                }}
-                className={`py-2 rounded-xl transition-all flex flex-col items-center justify-center gap-1 ${
-                  mode === 'password'
-                    ? 'bg-white text-terracotta-700 shadow-sm'
-                    : 'text-craft-600 hover:text-craft-900'
-                }`}
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>Password</span>
               </button>
             </div>
           )}
@@ -328,7 +327,7 @@ function LoginForm() {
                     />
                   </div>
                   <p className="text-[11px] text-craft-500 mt-1.5">
-                    We'll send your code via WhatsApp and cellular SMS.
+                    We'll send your code via cellular SMS and WhatsApp.
                   </p>
                 </div>
 
@@ -340,6 +339,19 @@ function LoginForm() {
                   <KeyRound className="w-4 h-4" />
                   <span>{loading ? 'Sending Code...' : 'Get Mobile / WhatsApp OTP'}</span>
                 </button>
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('password');
+                      if (phoneInput) setEmailInput(phoneInput);
+                    }}
+                    className="text-xs text-terracotta-700 hover:text-terracotta-900 font-semibold"
+                  >
+                    🔑 Know your password? Log in with Password instead
+                  </button>
+                </div>
               </form>
             ) : null
           )}
@@ -347,62 +359,6 @@ function LoginForm() {
           {/* OTP VERIFICATION VIEW (FOR BOTH EMAIL & MOBILE OTP) */}
           {otpStep === 'verify' && (
             <form onSubmit={handleVerifyOtp} className="space-y-4">
-              {/* Email Delivery & Spam Folder Warning */}
-              {(mode === 'email_otp' || isEmailDelivered || maskedEmail) && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs space-y-1.5 shadow-sm">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-950">
-                    <Mail className="w-4 h-4 text-amber-700" />
-                    <span>Check your Email Inbox & SPAM Folder:</span>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-amber-900">
-                    Security code was dispatched to registered email <strong>{maskedEmail || maskedTarget || activeTarget}</strong>. If not in your primary Inbox, please check your <strong>Spam / Junk</strong> folder!
-                  </p>
-                </div>
-              )}
-
-              {/* Zoho Arattai & WhatsApp direct delivery options */}
-              <div className="space-y-2">
-                {arattaiUrl && (
-                  <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2 shadow-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[11px] font-bold text-sky-950 flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-                        <span>Zoho Arattai Instant Delivery:</span>
-                      </p>
-                      <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-full border border-sky-300">
-                        Zoho Chat
-                      </span>
-                    </div>
-                    <a
-                      href={arattaiUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 px-4 rounded-xl bg-[#0072CE] hover:bg-[#005EA6] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                    >
-                      <MessageSquare className="w-4 h-4" />
-                      <span>Open Zoho Arattai to Get Code</span>
-                    </a>
-                  </div>
-                )}
-
-                {whatsappUrl && (
-                  <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
-                    <p className="text-[11px] font-semibold text-emerald-900">
-                      Get your code immediately on WhatsApp:
-                    </p>
-                    <a
-                      href={whatsappUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>Open WhatsApp to Get Code</span>
-                    </a>
-                  </div>
-                )}
-              </div>
-
               <div>
                 <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
                   Enter 6-Digit Verification Code
@@ -423,17 +379,6 @@ function LoginForm() {
                 <p className="text-[11px] text-craft-500 mt-1.5">
                   Code sent to <strong className="text-craft-800">{maskedTarget || activeTarget}</strong>
                 </p>
-
-                {quickFillOtp && (
-                  <button
-                    type="button"
-                    onClick={() => setOtpCode(quickFillOtp)}
-                    className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
-                    <span>⚡ 1-Tap Quick-Fill Code ({quickFillOtp})</span>
-                  </button>
-                )}
               </div>
 
               <button
@@ -467,6 +412,30 @@ function LoginForm() {
                   <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}</span>
                 </button>
               </div>
+
+              <div className="mt-4 pt-3 border-t border-craft-100 flex flex-col gap-2 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpStep('send');
+                    setMode('password');
+                    if (activeTarget) setEmailInput(activeTarget);
+                  }}
+                  className="text-xs text-terracotta-700 hover:text-terracotta-900 font-semibold"
+                >
+                  🔑 Didn't receive SMS code? Log in with Password instead
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOtpStep('send');
+                    setMode('email_otp');
+                  }}
+                  className="text-xs text-craft-600 hover:text-craft-800"
+                >
+                  ✉️ Or send instant code to your Email inbox
+                </button>
+              </div>
             </form>
           )}
 
@@ -475,19 +444,22 @@ function LoginForm() {
             <form onSubmit={handlePasswordLogin} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
-                  Email Address
+                  Mobile Number or Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-400" />
+                  <Phone className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-400" />
                   <input
-                    type="email"
+                    type="text"
                     required
                     value={emailInput}
                     onChange={(e) => setEmailInput(e.target.value)}
-                    placeholder="you@example.com"
+                    placeholder="e.g. 8878311084 or name@gmail.com"
                     className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
                   />
                 </div>
+                <p className="text-[11px] text-craft-500 mt-1">
+                  Log in directly with your registered phone number or email address.
+                </p>
               </div>
 
               <div>
@@ -527,7 +499,8 @@ function LoginForm() {
                 disabled={loading}
                 className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-warm flex items-center justify-center gap-2 transition-all"
               >
-                {loading ? 'Signing In...' : 'Sign In with Password'}
+                <Lock className="w-4 h-4" />
+                <span>{loading ? 'Signing In...' : 'Sign In with Mobile / Email'}</span>
               </button>
 
               <div className="flex items-center justify-between text-xs pt-1">

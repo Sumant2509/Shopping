@@ -54,8 +54,10 @@ export async function GET(request: Request) {
   return NextResponse.json({ products });
 }
 
+import { sanitizeInput } from '@/lib/security';
+
 export async function POST(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
   if (!token || !(await verifyAdminToken(token))) {
@@ -63,7 +65,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = sanitizeInput(rawBody);
     const newProduct = db.createProduct(body);
     return NextResponse.json({ success: true, product: newProduct }, { status: 201 });
   } catch (error) {

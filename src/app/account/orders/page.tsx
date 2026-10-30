@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Home, ShoppingBag, Package, Truck, CheckCircle2, Clock, XCircle, ChevronRight, User, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { Order } from '@/lib/types';
@@ -17,9 +18,16 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 };
 
 export default function CustomerOrdersPage() {
-  const { customer } = useAuth();
+  const router = useRouter();
+  const { customer, loading: authLoading } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!authLoading && !customer) {
+      router.replace('/account/login');
+    }
+  }, [authLoading, customer, router]);
 
   useEffect(() => {
     fetch('/api/auth/orders')

@@ -25,6 +25,7 @@ import { formatPrice } from '@/lib/utils';
 import { lookupPincode } from '@/lib/shipping';
 import { PaymentMethod } from '@/lib/types';
 import { OnlinePaymentModal } from '@/components/OnlinePaymentModal';
+import { getOrderItemDisplayImage, getOrderItemColorDisplay } from '@/lib/custom-mat-svg';
 
 const INDIAN_STATES = [
   "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", 
@@ -828,24 +829,51 @@ export default function CheckoutPage() {
 
               {/* Items summary */}
               <div className="max-h-60 overflow-y-auto space-y-3 pr-1 divide-y divide-craft-100">
-                {items.map((item) => (
-                  <div key={`${item.productId}-${item.selectedColor}`} className="pt-3 first:pt-0 flex items-center gap-3">
-                    <img
-                      src={item.image || '/images/hero_doormat.jpg'}
-                      alt={item.name}
-                      className="w-14 h-14 rounded-xl object-cover bg-craft-100 shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-xs text-craft-900 truncate">{item.name}</h4>
-                      <p className="text-[11px] text-craft-500">
-                        {item.dimensions} • {item.selectedColor} • Qty: {item.quantity}
-                      </p>
+                {items.map((item) => {
+                  const displayImg = getOrderItemDisplayImage(item);
+                  const colorInfo = getOrderItemColorDisplay(item.selectedColor);
+
+                  return (
+                    <div key={`${item.productId}-${item.selectedColor}`} className="pt-3 first:pt-0 flex items-center gap-3">
+                      <div className="w-14 h-14 rounded-xl overflow-hidden bg-craft-100 shrink-0 border border-craft-200 flex items-center justify-center p-0.5">
+                        <img
+                          src={displayImg}
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-bold text-xs text-craft-900 truncate">{item.name}</h4>
+                        <p className="text-[11px] text-craft-600 mt-0.5 font-medium">
+                          {item.dimensions}
+                        </p>
+                        {colorInfo.isCustomPalette ? (
+                          <div className="flex items-center gap-1 mt-1 flex-wrap">
+                            <span className="text-[10px] text-craft-500 font-semibold mr-0.5">Custom Petals:</span>
+                            {colorInfo.hexList.map((hex, idx) => (
+                              <span
+                                key={idx}
+                                className="w-2.5 h-2.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                                style={{ backgroundColor: hex }}
+                                title={colorInfo.displayText.split(', ')[idx] || hex}
+                              />
+                            ))}
+                            <span className="text-[10px] text-craft-700 font-medium ml-1">
+                              • Qty: {item.quantity}
+                            </span>
+                          </div>
+                        ) : (
+                          <p className="text-[11px] text-craft-500 mt-0.5">
+                            {item.selectedColor} • Qty: {item.quantity}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs font-bold text-craft-900 shrink-0">
+                        {formatPrice(item.price * item.quantity)}
+                      </span>
                     </div>
-                    <span className="text-xs font-bold text-craft-900 shrink-0">
-                      {formatPrice(item.price * item.quantity)}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Price Breakdown */}

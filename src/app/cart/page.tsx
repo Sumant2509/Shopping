@@ -20,6 +20,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { useCart } from '@/lib/cart-context';
 import { formatPrice, generateWhatsAppLink } from '@/lib/utils';
+import { getOrderItemDisplayImage, getOrderItemColorDisplay } from '@/lib/custom-mat-svg';
 
 export default function CartPage() {
   const router = useRouter();
@@ -123,35 +124,61 @@ export default function CartPage() {
 
               {/* Items Card List */}
               <div className="bg-white rounded-3xl border border-craft-200 shadow-sm divide-y divide-craft-100 overflow-hidden">
-                {items.map((item) => (
-                  <div key={`${item.productId}-${item.selectedColor}`} className="p-5 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-center">
-                    <img
-                      src={item.image || '/images/hero_doormat.jpg'}
-                      alt={item.name}
-                      className="w-24 h-24 rounded-2xl object-cover bg-craft-100 shrink-0"
-                    />
+                {items.map((item) => {
+                  const displayImg = getOrderItemDisplayImage(item);
+                  const colorInfo = getOrderItemColorDisplay(item.selectedColor);
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="font-serif font-bold text-base text-craft-950">
-                            {item.name}
-                          </h3>
-                          <p className="text-xs text-craft-500 mt-0.5">
-                            {item.dimensions} • Color: <span className="font-semibold text-craft-800">{item.selectedColor}</span>
-                          </p>
-                        </div>
-
-                        <button
-                          onClick={() => removeItem(item.productId, item.selectedColor)}
-                          className="text-craft-400 hover:text-red-600 p-1 transition-colors"
-                          title="Remove item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                  return (
+                    <div key={`${item.productId}-${item.selectedColor}`} className="p-5 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-center">
+                      <div className="w-24 h-24 rounded-2xl overflow-hidden bg-craft-100 shrink-0 border border-craft-200 flex items-center justify-center p-1.5">
+                        <img
+                          src={displayImg}
+                          alt={item.name}
+                          className="w-full h-full object-contain"
+                        />
                       </div>
 
-                      <div className="flex items-center justify-between mt-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h3 className="font-serif font-bold text-base text-craft-950">
+                              {item.name}
+                            </h3>
+                            <p className="text-xs text-craft-600 mt-0.5 font-medium">
+                              {item.dimensions}
+                            </p>
+                            {colorInfo.isCustomPalette ? (
+                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                                <span className="text-[11px] text-craft-500 font-semibold">Custom Yarn Colors:</span>
+                                {colorInfo.hexList.map((hex, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="w-3.5 h-3.5 rounded-full border border-black/20 shrink-0 shadow-2xs"
+                                    style={{ backgroundColor: hex }}
+                                    title={colorInfo.displayText.split(', ')[idx] || hex}
+                                  />
+                                ))}
+                                <span className="text-xs text-craft-700 font-medium ml-1">
+                                  ({colorInfo.displayText})
+                                </span>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-craft-500 mt-0.5">
+                                Color: <span className="font-semibold text-craft-800">{item.selectedColor}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          <button
+                            onClick={() => removeItem(item.productId, item.selectedColor)}
+                            className="text-craft-400 hover:text-red-600 p-1 transition-colors cursor-pointer"
+                            title="Remove item"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <div className="flex items-center justify-between mt-4">
                         {/* Stepper */}
                         <div className="flex items-center border border-craft-300 rounded-xl bg-craft-50">
                           <button
@@ -187,8 +214,9 @@ export default function CartPage() {
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
+            </div>
 
               {/* Continue Shopping Link */}
               <div className="flex items-center justify-between pt-2">

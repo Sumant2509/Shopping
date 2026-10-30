@@ -3,11 +3,22 @@ import { db } from '@/lib/db';
 import { signCustomerToken, hashPassword } from '@/lib/auth';
 import { sendOtpSms } from '@/lib/sms';
 import { sendCustomerOtpEmail } from '@/lib/email';
+import { generateSecureOtp, safeCompareStrings, sanitizeInput } from '@/lib/security';
+import {
+  rateLimit,
+  checkOtpRequestCooldown,
+  recordOtpDispatched,
+  checkOtpVerificationStatus,
+  recordFailedOtpVerification,
+  clearOtpVerificationAttempts,
+  getClientIp,
+} from '@/lib/rate-limit';
 import {
   formatOtpWhatsAppMessage,
   createCustomerWhatsAppLink,
   createCustomerArattaiLink,
   sendAutomatedWhatsAppNotification,
+  sendInteractiveWhatsAppOtp,
 } from '@/lib/whatsapp';
 
 export const dynamic = 'force-dynamic';
@@ -50,11 +61,21 @@ function maskEmail(email?: string): string {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const clientIp = getClientIp(request);
+    const ipCheck = rateLimit(`otp_ip_${clientIp}`, 20, 60 * 1000);
+    if (!ipCheck.success) {
+      return NextResponse.json(
+        { error: 'Rate limit exceeded: Too many OTP requests. Please wait a minute.' },
+        { status: 429 }
+      );
+    }
+
+    const rawBody = await request.json();
+    const body = sanitizeInput(rawBody);
     const { action, target, otp, purpose = 'login', name, registrationData, channel } = body;
 
-    if (!target) {
-      return NextResponse.json({ error: 'Email address or mobile number is required' }, { status: 400 });
+    if (!target || typeof target !== 'string') {
+      return NextResponse.json({ error: 'Valid email address or mobile number is required' }, { status: 400 });
     }
 
     const cleanTarget = target.trim();
@@ -67,6 +88,15 @@ export async function POST(request: Request) {
     // ACTION 1: SEND OTP (Email / WhatsApp / Mobile)
     // =========================================================================
     if (action === 'send') {
+      // Security: Target-based cooldown & hourly quotas
+      const cooldownCheck = checkOtpRequestCooldown(cleanTarget);
+      if (!cooldownCheck.allowed) {
+        return NextResponse.json(
+          { error: cooldownCheck.reason || 'Please wait before requesting another code.' },
+          { status: 429 }
+        );
+      }
+
       let emailTarget = isEmail ? cleanTarget : (body.email || registrationData?.email);
       let phoneTarget = !isEmail ? cleanTarget : (body.phone || registrationData?.phone);
 
@@ -122,8 +152,8 @@ export async function POST(request: Request) {
         }
       }
 
-      // Generate 6-digit numeric OTP
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      // Generate Cryptographically Secure 6-digit numeric OTP
+      const generatedOtp = generateSecureOtp(6);
       const expiresAt = Date.now() + 5 * 60 * 1000; // 5 minutes
 
       const otpRecord: StoredOtp = {
@@ -135,6 +165,11 @@ export async function POST(request: Request) {
         email: emailTarget,
         phone: phoneTarget,
       };
+
+      // Record dispatch for rate limiting & cooldown
+      recordOtpDispatched(cleanTarget);
+      if (emailTarget && emailTarget !== cleanTarget) recordOtpDispatched(emailTarget);
+      if (phoneTarget && phoneTarget !== cleanTarget) recordOtpDispatched(phoneTarget);
 
       // Store under primary key
       otpStore.set(primaryKey, otpRecord);
@@ -183,10 +218,12 @@ export async function POST(request: Request) {
         whatsappUrl = createCustomerWhatsAppLink(phoneTarget, whatsappMsg);
         arattaiUrl = createCustomerArattaiLink(phoneTarget, whatsappMsg);
 
-        // Dispatch automated WhatsApp notification
-        sendAutomatedWhatsAppNotification({
+        // Dispatch automated WhatsApp notification (Interactive template + fallback)
+        sendInteractiveWhatsAppOtp({
           phone: phoneTarget,
-          message: whatsappMsg,
+          otp: generatedOtp,
+          customerName: greetingName,
+          purpose,
         }).catch((err) => console.error('[WhatsApp OTP Notify Error]:', err));
 
         try {
@@ -209,14 +246,12 @@ export async function POST(request: Request) {
       const preferredChannel = sendEmail && !sendMobile ? 'email' : sendMobile && !sendEmail ? 'mobile' : 'both';
       
       let responseMessage: string;
-      if (emailDelivered && emailTarget) {
-        responseMessage = `Verification code sent to your registered email ${maskEmail(emailTarget)}${phoneTarget ? ` and mobile ${maskPhone(phoneTarget)}` : ''}. Please check your Inbox and SPAM folder.`;
-      } else if (smsDelivered && phoneTarget) {
-        responseMessage = `Verification code sent to ${maskPhone(phoneTarget)}.`;
-      } else if (emailTarget) {
-        responseMessage = `Verification code sent to ${maskEmail(emailTarget)}. Check Inbox & Spam.`;
+      if (channel === 'email' || (isEmail && !phoneTarget)) {
+        responseMessage = `Verification code sent to ${maskEmail(emailTarget || cleanTarget)}.`;
+      } else if (emailDelivered && emailTarget) {
+        responseMessage = `Verification code sent to ${maskPhone(phoneTarget || cleanTarget)} and ${maskEmail(emailTarget)}.`;
       } else {
-        responseMessage = `Verification code generated for ${maskPhone(cleanTarget)}.`;
+        responseMessage = `Verification code sent to ${maskPhone(phoneTarget || cleanTarget)}.`;
       }
 
       return NextResponse.json({
@@ -224,7 +259,6 @@ export async function POST(request: Request) {
         message: responseMessage,
         whatsappUrl,
         arattaiUrl,
-        quickFillOtp: generatedOtp,
         channel: preferredChannel,
         emailDelivered,
         smsDelivered,
@@ -244,6 +278,16 @@ export async function POST(request: Request) {
       }
 
       const cleanOtp = otp.trim();
+
+      // Check lockout status (anti-brute-force)
+      const lockStatus = checkOtpVerificationStatus(primaryKey);
+      if (lockStatus.locked) {
+        return NextResponse.json(
+          { error: `Account verification is temporarily locked due to too many failed attempts. Please try again in ${lockStatus.waitMinutes || 15} minutes.` },
+          { status: 429 }
+        );
+      }
+
       let stored = otpStore.get(primaryKey);
 
       // Secondary lookup by email or phone if target switched
@@ -253,32 +297,53 @@ export async function POST(request: Request) {
         stored = otpStore.get(pKey);
       }
 
-      // Master testing bypass codes
-      const isMasterOtp = cleanOtp === '887811' || cleanOtp === '123456';
-
-      if (!isMasterOtp) {
-        if (!stored) {
-          return NextResponse.json(
-            { error: 'No active OTP request found for this number/email. Please request a new code.' },
-            { status: 400 }
-          );
-        }
-
-        if (Date.now() > stored.expiresAt) {
-          otpStore.delete(primaryKey);
-          return NextResponse.json(
-            { error: 'Verification code has expired. Please request a new one.' },
-            { status: 400 }
-          );
-        }
-
-        if (stored.otp !== cleanOtp) {
-          return NextResponse.json(
-            { error: 'Incorrect 6-digit verification code. Please check and try again.' },
-            { status: 400 }
-          );
-        }
+      if (!stored) {
+        return NextResponse.json(
+          { error: 'No active OTP request found for this number/email. Please request a new code.' },
+          { status: 400 }
+        );
       }
+
+      if (Date.now() > stored.expiresAt) {
+        otpStore.delete(primaryKey);
+        return NextResponse.json(
+          { error: 'Verification code has expired. Please request a new one.' },
+          { status: 400 }
+        );
+      }
+
+      // Cryptographically secure constant-time check
+      const isMatch = safeCompareStrings(stored.otp, cleanOtp);
+
+      if (!isMatch) {
+        const failure = recordFailedOtpVerification(primaryKey);
+        if (stored.email) recordFailedOtpVerification(stored.email);
+        if (stored.phone) recordFailedOtpVerification(stored.phone);
+
+        if (failure.locked) {
+          // Immediately invalidate the OTP upon reaching limit
+          otpStore.delete(primaryKey);
+          if (stored.email) otpStore.delete(stored.email.toLowerCase());
+          if (stored.phone) {
+            const pKey = stored.phone.replace(/[^0-9]/g, '').slice(-10);
+            if (pKey) otpStore.delete(pKey);
+          }
+          return NextResponse.json(
+            { error: 'Security alert: 5 incorrect attempts exceeded. Code invalidated and target locked for 15 minutes.' },
+            { status: 429 }
+          );
+        }
+
+        return NextResponse.json(
+          { error: `Incorrect 6-digit verification code. ${failure.remainingAttempts} attempt(s) remaining.` },
+          { status: 400 }
+        );
+      }
+
+      // Verification succeeded: Clear failed attempts
+      clearOtpVerificationAttempts(primaryKey);
+      if (stored?.email) clearOtpVerificationAttempts(stored.email);
+      if (stored?.phone) clearOtpVerificationAttempts(stored.phone);
 
       // Clear used OTP
       otpStore.delete(primaryKey);

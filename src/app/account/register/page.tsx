@@ -28,7 +28,7 @@ import { useAuth } from '@/lib/auth-context';
 
 export default function CustomerRegisterPage() {
   const router = useRouter();
-  const { refreshCustomer } = useAuth();
+  const { register, refreshCustomer } = useAuth();
 
   const [step, setStep] = useState<'form' | 'verify'>('form');
 
@@ -50,7 +50,6 @@ export default function CustomerRegisterPage() {
   const [otpCode, setOtpCode] = useState('');
   const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
   const [arattaiUrl, setArattaiUrl] = useState<string | null>(null);
-  const [quickFillOtp, setQuickFillOtp] = useState<string | null>(null);
   const [maskedTarget, setMaskedTarget] = useState<string | null>(null);
   const [activeChannel, setActiveChannel] = useState<'email' | 'mobile'>('email');
   const [resendTimer, setResendTimer] = useState<number>(0);
@@ -67,7 +66,63 @@ export default function CustomerRegisterPage() {
     setForm((f) => ({ ...f, [field]: e.target.value }));
   };
 
-  // STEP 1: Submit Details & Send Verification OTP
+  // Direct Customer Registration (Frictionless, No SMS Delay)
+  const handleDirectRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!form.name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      setError('Please enter a valid email address (e.g. name@gmail.com)');
+      return;
+    }
+
+    const cleanPhone = form.phone.replace(/[^0-9]/g, '');
+    if (cleanPhone.length < 10) {
+      setError('Please enter a valid 10-digit Indian mobile number');
+      return;
+    }
+
+    if (form.password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return;
+    }
+
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const res = await register(
+        form.name.trim(),
+        form.email.toLowerCase().trim(),
+        cleanPhone.slice(-10),
+        form.password
+      );
+
+      if (!res.success) {
+        setError(res.error || 'Registration failed. Please try again.');
+      } else {
+        setSuccess(true);
+        await refreshCustomer();
+        setTimeout(() => router.push('/account/profile'), 1200);
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // STEP 1: Submit Details & Send Verification OTP (Alternative)
   const handleInitiateRegister = async (channelPreference?: 'email' | 'mobile', e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setError(null);
@@ -116,6 +171,8 @@ export default function CustomerRegisterPage() {
           channel: targetChannel,
           purpose: 'register',
           name: form.name.trim(),
+          email: form.email.toLowerCase().trim(),
+          phone: cleanPhone,
           registrationData: {
             name: form.name.trim(),
             email: form.email.toLowerCase().trim(),
@@ -133,7 +190,6 @@ export default function CustomerRegisterPage() {
         setActiveChannel(targetChannel);
         setWhatsappUrl(data.whatsappUrl || null);
         setArattaiUrl(data.arattaiUrl || null);
-        setQuickFillOtp(data.quickFillOtp || null);
         setMaskedTarget(targetChannel === 'email' ? (data.maskedEmail || form.email) : (data.maskedPhone || cleanPhone));
         setResendTimer(60);
       }
@@ -157,7 +213,7 @@ export default function CustomerRegisterPage() {
 
     try {
       const cleanPhone = form.phone.replace(/[^0-9]/g, '');
-      const primaryTarget = activeChannel === 'email' ? form.email.trim() : cleanPhone;
+      const primaryTarget = form.email.toLowerCase().trim();
 
       const res = await fetch('/api/auth/otp', {
         method: 'POST',
@@ -165,11 +221,13 @@ export default function CustomerRegisterPage() {
         body: JSON.stringify({
           action: 'verify',
           target: primaryTarget,
+          email: primaryTarget,
+          phone: cleanPhone,
           otp: otpCode.trim(),
           purpose: 'register',
           registrationData: {
             name: form.name.trim(),
-            email: form.email.toLowerCase().trim(),
+            email: primaryTarget,
             phone: cleanPhone,
             password: form.password,
           },
@@ -207,12 +265,12 @@ export default function CustomerRegisterPage() {
           <ShoppingBag className="w-8 h-8" />
         </div>
         <h1 className="font-serif font-bold text-3xl text-craft-950">
-          {step === 'form' ? 'Create Customer Account' : 'Verify Security OTP'}
+          {step === 'form' ? 'Create Customer Account' : 'Verify Email Address'}
         </h1>
         <p className="mt-2 text-craft-600 text-sm">
           {step === 'form'
-            ? 'Join Home-Warrior with Email or WhatsApp OTP verification'
-            : `Enter the 6-digit code sent to your ${activeChannel === 'email' ? 'email address' : 'mobile number'}`}
+            ? 'Sign up with 6-Digit Email Verification'
+            : `Enter the 6-digit code sent to ${form.email}`}
         </p>
       </div>
 
@@ -236,7 +294,7 @@ export default function CustomerRegisterPage() {
 
           {/* STEP 1: Registration Form */}
           {step === 'form' ? (
-            <form onSubmit={(e) => handleInitiateRegister(selectedChannel, e)} className="space-y-4">
+            <form onSubmit={(e) => handleInitiateRegister('email', e)} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
                   Full Name *
@@ -269,6 +327,9 @@ export default function CustomerRegisterPage() {
                     className="w-full pl-10 pr-4 py-3 border border-craft-300 rounded-xl text-sm text-craft-900 focus:outline-none focus:ring-2 focus:ring-terracotta-400"
                   />
                 </div>
+                <p className="text-[11px] text-craft-500 mt-1">
+                  A 6-digit OTP code will be sent to this email to verify your address.
+                </p>
               </div>
 
               <div>
@@ -331,184 +392,79 @@ export default function CustomerRegisterPage() {
                 </div>
               </div>
 
-              {/* Verification Channel Selector */}
-              <div className="pt-2">
-                <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-2">
-                  Verify Account Using:
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedChannel('email')}
-                    className={`p-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                      selectedChannel === 'email'
-                        ? 'border-terracotta-600 bg-terracotta-50 text-terracotta-800 ring-2 ring-terracotta-200'
-                        : 'border-craft-200 bg-white text-craft-700 hover:border-craft-400'
-                    }`}
-                  >
-                    <Inbox className="w-4 h-4 text-terracotta-700" />
-                    <span>Email OTP</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setSelectedChannel('mobile')}
-                    className={`p-3 rounded-2xl border text-xs font-bold flex items-center justify-center gap-2 transition-all ${
-                      selectedChannel === 'mobile'
-                        ? 'border-terracotta-600 bg-terracotta-50 text-terracotta-800 ring-2 ring-terracotta-200'
-                        : 'border-craft-200 bg-white text-craft-700 hover:border-craft-400'
-                    }`}
-                  >
-                    <MessageCircle className="w-4 h-4 text-emerald-600" />
-                    <span>WhatsApp OTP</span>
-                  </button>
-                </div>
-              </div>
-
               {/* Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
                 className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-sm shadow-warm flex items-center justify-center gap-2 transition-all mt-4"
               >
-                <span>
-                  {loading
-                    ? 'Sending Verification Code...'
-                    : selectedChannel === 'email'
-                    ? 'Verify via Email OTP'
-                    : 'Verify via WhatsApp OTP'}
-                </span>
+                <Mail className="w-4 h-4" />
+                <span>{loading ? 'Sending Verification Code...' : 'Verify Email & Create Account'}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
+
+              <div className="pt-1 text-center">
+                <span className="text-[11px] text-craft-500 inline-flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Secure email verification ensures account ownership and order updates</span>
+                </span>
+              </div>
             </form>
           ) : (
             /* STEP 2: OTP Verification */
             <form onSubmit={handleVerifyOtp} className="space-y-4">
-              {/* Zoho Arattai & WhatsApp direct delivery options */}
-              {activeChannel === 'mobile' && (
-                <div className="space-y-2">
-                  {arattaiUrl && (
-                    <div className="p-3.5 rounded-2xl bg-sky-50 border border-sky-200 space-y-2 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <p className="text-[11px] font-bold text-sky-950 flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-sky-500 animate-pulse" />
-                          <span>Zoho Arattai Instant Delivery:</span>
-                        </p>
-                        <span className="text-[10px] bg-sky-100 text-sky-800 font-bold px-2 py-0.5 rounded-full border border-sky-300">
-                          Zoho Chat
-                        </span>
-                      </div>
-                      <a
-                        href={arattaiUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-2.5 px-4 rounded-xl bg-[#0072CE] hover:bg-[#005EA6] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                      >
-                        <MessageSquare className="w-4 h-4" />
-                        <span>Open Zoho Arattai to Get Code</span>
-                      </a>
-                    </div>
-                  )}
-
-                  {whatsappUrl && (
-                    <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 space-y-2">
-                      <p className="text-[11px] font-semibold text-emerald-900">
-                        Get your verification code instantly on WhatsApp:
-                      </p>
-                      <a
-                        href={whatsappUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="w-full py-2.5 px-4 rounded-xl bg-[#25D366] hover:bg-[#1EBE5D] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition-all"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                        <span>Open WhatsApp to Get Code</span>
-                      </a>
-                    </div>
-                  )}
+              <div className="text-center mb-2">
+                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto mb-3 shadow-inner">
+                  <Mail className="w-6 h-6" />
                 </div>
-              )}
+                <h2 className="font-serif font-bold text-lg text-craft-950">
+                  Check Your Email
+                </h2>
+                <p className="text-xs text-craft-600 mt-1">
+                  We sent a 6-digit verification code to
+                </p>
+                <p className="text-sm font-bold text-terracotta-700 mt-0.5 font-mono">
+                  {form.email}
+                </p>
+              </div>
 
-              {activeChannel === 'email' && (
-                <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 flex items-center gap-2 text-xs text-amber-900">
-                  <Inbox className="w-4 h-4 text-amber-700 shrink-0" />
-                  <span>
-                    OTP delivered to your inbox. Check <strong>Spam / Junk</strong> folder if not visible.
-                  </span>
-                </div>
-              )}
+              <div className="bg-amber-50/80 border border-amber-200/80 text-amber-900 p-3 rounded-xl text-xs flex items-start gap-2">
+                <Inbox className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" />
+                <span className="leading-relaxed">
+                  Please check your inbox. If you don't see it, be sure to check your <strong>Spam</strong> or <strong>Updates</strong> folder.
+                </span>
+              </div>
 
               <div>
-                <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-1.5">
-                  Enter 6-Digit Verification Code
+                <label className="block text-xs font-bold text-craft-700 uppercase tracking-wider mb-2 text-center">
+                  Enter 6-Digit Code
                 </label>
-                <div className="relative">
-                  <KeyRound className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-amber-600" />
+                <div className="relative max-w-[280px] mx-auto">
                   <input
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     required
                     maxLength={6}
                     autoFocus
                     value={otpCode}
                     onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="• • • • • •"
-                    className="w-full pl-10 pr-4 py-3 border-2 border-terracotta-300 rounded-xl text-xl font-mono text-center tracking-[0.4em] text-craft-900 focus:outline-none focus:border-terracotta-600"
+                    className="w-full py-3 border-2 border-terracotta-400 focus:border-terracotta-600 rounded-xl text-2xl font-mono text-center tracking-[0.4em] text-craft-900 bg-amber-50/40 focus:bg-white focus:outline-none transition-all font-bold"
                   />
                 </div>
-                <p className="text-[11px] text-craft-500 mt-1.5">
-                  Code sent to <strong className="text-craft-800">{maskedTarget}</strong>
-                </p>
-
-                {quickFillOtp && (
-                  <button
-                    type="button"
-                    onClick={() => setOtpCode(quickFillOtp)}
-                    className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-amber-600 fill-amber-500" />
-                    <span>⚡ 1-Tap Quick-Fill Code ({quickFillOtp})</span>
-                  </button>
-                )}
               </div>
 
               <button
                 type="submit"
                 disabled={loading || otpCode.length !== 6}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-sm shadow-md flex items-center justify-center gap-2 transition-all mt-4"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>{loading ? 'Verifying...' : 'Verify Code & Complete Registration'}</span>
+                <span>{loading ? 'Verifying Code...' : 'Verify Email & Complete Registration'}</span>
               </button>
 
-              {/* Channel switch helper if code not received */}
-              <div className="pt-2 p-3 bg-craft-50 rounded-xl border border-craft-200 text-center space-y-1.5">
-                <p className="text-[11px] text-craft-600 font-medium">Didn't receive code?</p>
-                <div className="flex items-center justify-center gap-3 text-xs">
-                  {activeChannel === 'email' ? (
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => handleInitiateRegister('mobile')}
-                      className="font-bold text-emerald-700 hover:underline flex items-center gap-1"
-                    >
-                      <MessageCircle className="w-3.5 h-3.5" />
-                      <span>Send to WhatsApp Instead</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled={loading}
-                      onClick={() => handleInitiateRegister('email')}
-                      className="font-bold text-terracotta-700 hover:underline flex items-center gap-1"
-                    >
-                      <Inbox className="w-3.5 h-3.5" />
-                      <span>Send to Email Instead</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-3 border-t border-craft-100 text-xs">
                 <button
                   type="button"
                   onClick={() => {
@@ -516,19 +472,19 @@ export default function CustomerRegisterPage() {
                     setOtpCode('');
                     setError(null);
                   }}
-                  className="text-xs text-craft-500 hover:text-craft-800 flex items-center gap-1 font-medium"
+                  className="text-craft-500 hover:text-craft-800 flex items-center gap-1 font-medium"
                 >
-                  <ArrowLeft className="w-3 h-3" /> Edit Details
+                  <ArrowLeft className="w-3.5 h-3.5" /> Edit Details / Email
                 </button>
 
                 <button
                   type="button"
                   disabled={resendTimer > 0 || loading}
-                  onClick={() => handleInitiateRegister(activeChannel)}
-                  className="text-xs text-terracotta-700 hover:text-terracotta-800 disabled:opacity-40 flex items-center gap-1 font-bold"
+                  onClick={() => handleInitiateRegister('email')}
+                  className="text-terracotta-700 hover:text-terracotta-800 disabled:opacity-40 flex items-center gap-1 font-bold"
                 >
-                  <RefreshCw className={`w-3 h-3 ${loading ? 'animate-spin' : ''}`} />
-                  <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code'}</span>
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+                  <span>{resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend Code to Email'}</span>
                 </button>
               </div>
             </form>

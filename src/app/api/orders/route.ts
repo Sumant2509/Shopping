@@ -5,15 +5,18 @@ import { calculateShippingFee } from '@/lib/shipping';
 import { verifyAdminToken } from '@/lib/auth';
 import { verifyRazorpaySignature } from '@/lib/razorpay';
 import { cookies } from 'next/headers';
+import { sanitizeInput } from '@/lib/security';
+import { rateLimit, getClientIp } from '@/lib/rate-limit';
 import {
   formatOrderConfirmationWhatsAppMessage,
   createCustomerWhatsAppLink,
   sendAutomatedWhatsAppNotification,
+  sendInteractiveWhatsAppOrderConfirmation,
 } from '@/lib/whatsapp';
 import { syncOrderToZoho } from '@/lib/zoho';
 
 export async function GET(request: Request) {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const token = cookieStore.get('admin_token')?.value;
 
   if (!token || !(await verifyAdminToken(token))) {
@@ -26,7 +29,17 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const clientIp = getClientIp(request);
+    const orderLimiter = rateLimit(`order_ip_${clientIp}`, 20, 60 * 60 * 1000);
+    if (!orderLimiter.success) {
+      return NextResponse.json(
+        { error: 'Order placement limit exceeded for your connection. Please contact support.' },
+        { status: 429 }
+      );
+    }
+
+    const rawBody = await request.json();
+    const body = sanitizeInput(rawBody);
     const {
       customer,
       items,
@@ -136,11 +149,9 @@ export async function POST(request: Request) {
     const whatsAppMessage = formatOrderConfirmationWhatsAppMessage(newOrder);
     const customerWhatsAppUrl = createCustomerWhatsAppLink(newOrder.customer.phone, whatsAppMessage);
 
-    // Asynchronously dispatch automated WhatsApp notification if gateway available
-    sendAutomatedWhatsAppNotification({
-      phone: newOrder.customer.phone,
-      message: whatsAppMessage,
-    }).catch((err) => console.error('[WhatsApp Order Notify Error]:', err));
+    // Asynchronously dispatch automated WhatsApp notification (Interactive template + fallback)
+    sendInteractiveWhatsAppOrderConfirmation(newOrder)
+      .catch((err) => console.error('[WhatsApp Order Notify Error]:', err));
 
     // Asynchronously sync Order & GST Invoice to Zoho Books / Inventory if configured
     syncOrderToZoho(newOrder).catch((err) => console.error('[Zoho Books Sync Error]:', err));
@@ -154,5 +165,32 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Order creation error:', error);
     return NextResponse.json({ error: 'Failed to process order' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const cookieStore = await cookies();
+  const token = cookieStore.get('admin_token')?.value;
+
+  if (!token || !(await verifyAdminToken(token))) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const body = await request.json().catch(() => ({}));
+    if (body.all || body.orderId === 'all') {
+      db.clearAllOrders();
+      return NextResponse.json({ success: true, message: 'All orders cleared successfully' });
+    }
+    if (body.orderId) {
+      const deleted = db.deleteOrder(body.orderId);
+      if (!deleted) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      return NextResponse.json({ success: true, message: 'Order deleted successfully' });
+    }
+    // Default: clear all orders
+    db.clearAllOrders();
+    return NextResponse.json({ success: true, message: 'All orders cleared successfully' });
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message || 'Failed to clear orders' }, { status: 500 });
   }
 }

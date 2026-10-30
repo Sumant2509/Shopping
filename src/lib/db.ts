@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { Product, Order, Coupon, Review, SiteSettings, Customer, AdminUser } from './types';
+import { isMongoConfigured, getMongoDb } from './mongodb';
 
 interface DatabaseSchema {
   products: Product[];
@@ -295,95 +296,7 @@ const INITIAL_DATA: DatabaseSchema = {
       createdAt: "2026-09-28T10:00:00.000Z"
     }
   ],
-  orders: [
-    {
-      id: "ord-1001",
-      orderNumber: "SKM-2026-1082",
-      customer: {
-        name: "Priya Sharma",
-        phone: "9876543210",
-        email: "priya.sharma@example.com",
-        address: {
-          houseNo: "Flat 402, Sunshine Heights",
-          street: "14th Main, Indiranagar",
-          landmark: "Near Metro Pillar 84",
-          city: "Bengaluru",
-          state: "Karnataka",
-          pincode: "560038"
-        }
-      },
-      items: [
-        {
-          productId: "prod-flower-01",
-          name: "Handmade Flower-Shaped Braided Doormat",
-          slug: "handmade-flower-doormat",
-          price: 449,
-          mrp: 799,
-          quantity: 2,
-          selectedColor: "Marigold & Terracotta",
-          image: "/images/hero_doormat.jpg",
-          dimensions: "Diameter: 20 inches / 50.8 cm",
-          shape: "flower"
-        }
-      ],
-      subtotal: 898,
-      shippingFee: 0,
-      discount: 89,
-      couponCode: "WELCOME10",
-      totalAmount: 809,
-      paymentMethod: "UPI",
-      paymentStatus: "PAID",
-      razorpayOrderId: "order_demo_1001",
-      razorpayPaymentId: "pay_demo_1001_upi",
-      orderStatus: "SHIPPED",
-      trackingNumber: "DLV-9823471029",
-      courierPartner: "Delhivery Express",
-      estimatedDeliveryDate: "10 Oct 2026",
-      createdAt: "2026-10-04T11:20:00.000Z",
-      updatedAt: "2026-10-05T14:30:00.000Z"
-    },
-    {
-      id: "ord-1002",
-      orderNumber: "SKM-2026-1083",
-      customer: {
-        name: "Rajesh Verma",
-        phone: "9811223344",
-        email: "rajesh.v@example.com",
-        address: {
-          houseNo: "House 24, Block C",
-          street: "Green Park Extension",
-          landmark: "Opposite Gurudwara",
-          city: "New Delhi",
-          state: "Delhi",
-          pincode: "110016"
-        }
-      },
-      items: [
-        {
-          productId: "prod-round-02",
-          name: "Spiral Round Braided Cotton Doormat",
-          slug: "spiral-round-braided-doormat",
-          price: 399,
-          mrp: 699,
-          quantity: 1,
-          selectedColor: "Earthy Terracotta & Jute",
-          image: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?auto=format&fit=crop&w=900&q=80",
-          dimensions: "Diameter: 22 inches / 56 cm",
-          shape: "round"
-        }
-      ],
-      subtotal: 399,
-      shippingFee: 60,
-      discount: 0,
-      totalAmount: 459,
-      paymentMethod: "COD",
-      paymentStatus: "PENDING",
-      orderStatus: "PROCESSING",
-      estimatedDeliveryDate: "11 Oct 2026",
-      createdAt: "2026-10-05T09:15:00.000Z",
-      updatedAt: "2026-10-05T09:15:00.000Z"
-    }
-  ],
+  orders: [],
   coupons: [
     {
       id: "cpn-1",
@@ -549,7 +462,80 @@ function normalizeAdminUsers(admins?: any[]): AdminUser[] {
   return merged;
 }
 
+let hasStartedMongoSync = false;
+function stripMongoId<T>(doc: T): T {
+  if (!doc || typeof doc !== 'object') return doc;
+  const { _id, ...clean } = doc as any;
+  return clean as T;
+}
+
+async function syncFromMongo() {
+  if (!isMongoConfigured() || hasStartedMongoSync) return;
+  hasStartedMongoSync = true;
+  try {
+    const mongo = await getMongoDb();
+    if (!mongo) return;
+    const [products, orders, coupons, reviews, adminUsers, customers, settingsDoc] = await Promise.all([
+      mongo.collection('products').find({}).toArray(),
+      mongo.collection('orders').find({}).toArray(),
+      mongo.collection('coupons').find({}).toArray(),
+      mongo.collection('reviews').find({}).toArray(),
+      mongo.collection('adminUsers').find({}).toArray(),
+      mongo.collection('customers').find({}).toArray(),
+      mongo.collection('siteSettings').findOne({ _id: 'global_settings' as any }),
+    ]);
+
+    if (!memoryDb) ensureDbExists();
+
+    if (products && products.length > 0) {
+      memoryDb!.products = products.map(stripMongoId) as any;
+    }
+
+    if (orders && orders.length > 0) {
+      const existing = memoryDb!.orders || [];
+      const map = new Map<string, any>();
+      for (const o of existing) if (o?.id) map.set(o.id, stripMongoId(o));
+      for (const o of orders) if (o?.id) map.set(o.id, stripMongoId(o));
+      memoryDb!.orders = Array.from(map.values());
+    }
+
+    if (coupons && coupons.length > 0) {
+      memoryDb!.coupons = coupons.map(stripMongoId) as any;
+    }
+
+    if (reviews && reviews.length > 0) {
+      memoryDb!.reviews = reviews.map(stripMongoId) as any;
+    }
+
+    if (adminUsers && adminUsers.length > 0) {
+      memoryDb!.adminUsers = normalizeAdminUsers(adminUsers.map(stripMongoId) as any);
+    }
+
+    if (customers && customers.length > 0) {
+      const existing = memoryDb!.customers || [];
+      const map = new Map<string, any>();
+      for (const c of existing) if (c?.id) map.set(c.id, stripMongoId(c));
+      for (const c of customers) if (c?.id) map.set(c.id, stripMongoId(c));
+      memoryDb!.customers = Array.from(map.values());
+    }
+
+    if (settingsDoc) {
+      memoryDb!.siteSettings = stripMongoId(settingsDoc) as any;
+    }
+
+    console.log(
+      `[MongoDB Atlas] Successfully synchronized from cloud database: ${products.length} products, ${orders.length} orders, ${customers.length} customers, ${adminUsers.length} admins.`
+    );
+  } catch (err) {
+    console.warn('[MongoDB Atlas] Background sync warning:', err);
+  }
+}
+
 function ensureDbExists(): DatabaseSchema {
+  if (isMongoConfigured() && !hasStartedMongoSync) {
+    syncFromMongo().catch(console.error);
+  }
+
   if (memoryDb) {
     if (!memoryDb.adminUsers || memoryDb.adminUsers.length < 3) {
       memoryDb.adminUsers = normalizeAdminUsers(memoryDb.adminUsers);
@@ -607,6 +593,61 @@ function saveDb(data: DatabaseSchema) {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), 'utf-8');
   } catch (err) {
     console.warn('Could not write to disk in serverless environment, data preserved in memory:', err);
+  }
+
+  // Persist asynchronously to MongoDB Atlas (cloud database)
+  if (isMongoConfigured()) {
+    getMongoDb().then(async (db) => {
+      if (!db) return;
+      try {
+        for (const order of data.orders || []) {
+          const clean = stripMongoId(order) as any;
+          if (clean?.id) {
+            await db.collection('orders').updateOne({ id: clean.id }, { $set: clean }, { upsert: true });
+          }
+        }
+        for (const customer of data.customers || []) {
+          const clean = stripMongoId(customer) as any;
+          if (clean?.id) {
+            await db.collection('customers').updateOne({ id: clean.id }, { $set: clean }, { upsert: true });
+          }
+        }
+        for (const product of data.products || []) {
+          const clean = stripMongoId(product) as any;
+          if (clean?.id) {
+            await db.collection('products').updateOne({ id: clean.id }, { $set: clean }, { upsert: true });
+          }
+        }
+        for (const admin of data.adminUsers || []) {
+          const clean = stripMongoId(admin) as any;
+          if (clean?.id) {
+            await db.collection('adminUsers').updateOne({ id: clean.id }, { $set: clean }, { upsert: true });
+          }
+        }
+        for (const coupon of data.coupons || []) {
+          const clean = stripMongoId(coupon) as any;
+          if (clean?.id) {
+            await db.collection('coupons').updateOne({ id: clean.id }, { $set: clean }, { upsert: true });
+          }
+        }
+        for (const review of data.reviews || []) {
+          const clean = stripMongoId(review) as any;
+          if (clean?.id) {
+            await db.collection('reviews').updateOne({ id: clean.id }, { $set: clean }, { upsert: true });
+          }
+        }
+        if (data.siteSettings) {
+          const cleanSettings = stripMongoId(data.siteSettings) as any;
+          await db.collection('siteSettings').updateOne(
+            { _id: 'global_settings' as any },
+            { $set: cleanSettings },
+            { upsert: true }
+          );
+        }
+      } catch (err) {
+        console.error('[MongoDB Atlas Save Error]:', err);
+      }
+    }).catch(console.error);
   }
 }
 
@@ -716,6 +757,32 @@ export const db = {
     return data.orders[index];
   },
 
+  deleteOrder(id: string): boolean {
+    const data = ensureDbExists();
+    if (!data.orders) return false;
+    const initialLen = data.orders.length;
+    data.orders = data.orders.filter(o => o.id !== id && o.orderNumber !== id);
+    if (data.orders.length === initialLen) return false;
+    saveDb(data);
+    if (isMongoConfigured()) {
+      getMongoDb().then(mongo => {
+        if (mongo) mongo.collection('orders').deleteOne({ $or: [{ id }, { orderNumber: id }] }).catch(console.error);
+      }).catch(console.error);
+    }
+    return true;
+  },
+
+  clearAllOrders(): void {
+    const data = ensureDbExists();
+    data.orders = [];
+    saveDb(data);
+    if (isMongoConfigured()) {
+      getMongoDb().then(mongo => {
+        if (mongo) mongo.collection('orders').deleteMany({}).catch(console.error);
+      }).catch(console.error);
+    }
+  },
+
   // Coupons
   getCoupons(): Coupon[] {
     const data = ensureDbExists();
@@ -754,6 +821,11 @@ export const db = {
     data.coupons = data.coupons.filter(c => c.id !== id);
     if (data.coupons.length !== lenBefore) {
       saveDb(data);
+      if (isMongoConfigured()) {
+        getMongoDb().then(mongo => {
+          if (mongo) mongo.collection('coupons').deleteOne({ id }).catch(console.error);
+        }).catch(console.error);
+      }
       return true;
     }
     return false;
@@ -882,6 +954,11 @@ export const db = {
 
     data.adminUsers = data.adminUsers.filter(u => u.id !== target.id);
     saveDb(data);
+    if (isMongoConfigured()) {
+      getMongoDb().then(mongo => {
+        if (mongo) mongo.collection('adminUsers').deleteOne({ id: target.id }).catch(console.error);
+      }).catch(console.error);
+    }
     return true;
   },
 
@@ -959,6 +1036,32 @@ export const db = {
     const data = ensureDbExists();
     if (!data.customers) data.customers = [];
     return data.customers;
+  },
+
+  deleteCustomer(id: string): boolean {
+    const data = ensureDbExists();
+    if (!data.customers) return false;
+    const initialLen = data.customers.length;
+    data.customers = data.customers.filter(c => c.id !== id);
+    if (data.customers.length === initialLen) return false;
+    saveDb(data);
+    if (isMongoConfigured()) {
+      getMongoDb().then(mongo => {
+        if (mongo) mongo.collection('customers').deleteOne({ id }).catch(console.error);
+      }).catch(console.error);
+    }
+    return true;
+  },
+
+  clearAllCustomers(): void {
+    const data = ensureDbExists();
+    data.customers = [];
+    saveDb(data);
+    if (isMongoConfigured()) {
+      getMongoDb().then(mongo => {
+        if (mongo) mongo.collection('customers').deleteMany({}).catch(console.error);
+      }).catch(console.error);
+    }
   },
 
   getCustomerOrders(customerId: string): Order[] {

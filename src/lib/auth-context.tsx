@@ -15,7 +15,7 @@ interface CustomerPublic {
 interface AuthContextValue {
   customer: CustomerPublic | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (identifier: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (name: string, email: string, phone: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshCustomer: () => Promise<void>;
@@ -47,12 +47,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     refreshCustomer().finally(() => setLoading(false));
   }, [refreshCustomer]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (identifier: string, password: string) => {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ identifier, email: identifier, phone: identifier, password }),
       });
       const data = await res.json();
       if (!res.ok || !data.success) {

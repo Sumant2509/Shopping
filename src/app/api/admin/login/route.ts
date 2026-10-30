@@ -3,7 +3,20 @@ import { db } from '@/lib/db';
 import { verifyPassword, signAdminToken } from '@/lib/auth';
 import { sendOtpEmail } from '@/lib/email';
 import { sendOtpSms } from '@/lib/sms';
-import { sendAutomatedWhatsAppNotification, formatOtpWhatsAppMessage, createCustomerArattaiLink } from '@/lib/whatsapp';
+import { generateSecureOtp, safeCompareStrings, sanitizeInput } from '@/lib/security';
+import {
+  rateLimit,
+  getClientIp,
+  checkLoginAttempts,
+  recordFailedLogin,
+  clearFailedLogin,
+  checkOtpVerificationStatus,
+  recordFailedOtpVerification,
+  clearOtpVerificationAttempts,
+  checkOtpRequestCooldown,
+  recordOtpDispatched,
+} from '@/lib/rate-limit';
+import { sendAutomatedWhatsAppNotification, createCustomerArattaiLink } from '@/lib/whatsapp';
 
 // In-memory Admin OTP store: username -> { otp, channel, expiresAt, adminId }
 const adminOtpStore = new Map<
@@ -30,25 +43,61 @@ function maskEmail(email?: string): string {
 
 export async function POST(request: Request) {
   try {
-    const { username, password, otp, step, channel = 'mobile' } = await request.json();
+    const clientIp = getClientIp(request);
+    const ipCheck = rateLimit(`admin_login_ip_${clientIp}`, 15, 60 * 1000);
+    if (!ipCheck.success) {
+      return NextResponse.json(
+        { error: 'Too many requests from your IP. Security rate limit active. Please wait 1 minute.' },
+        { status: 429 }
+      );
+    }
 
-    if (!username) {
+    const rawBody = await request.json();
+    const body = sanitizeInput(rawBody);
+    const { username, password, otp, step, channel = 'mobile' } = body;
+
+    if (!username || typeof username !== 'string') {
       return NextResponse.json({ error: 'Please enter Admin username or email' }, { status: 400 });
     }
 
-    const admin = db.getAdminUser(username);
+    const cleanUsername = username.trim();
+    const admin = db.getAdminUser(cleanUsername);
     if (!admin) {
-      return NextResponse.json({ error: 'Admin account not found. Please verify username/email.' }, { status: 401 });
+      // Record failed attempt against IP/identifier to prevent user enumeration
+      recordFailedLogin(cleanUsername);
+      return NextResponse.json({ error: 'Invalid admin credentials.' }, { status: 401 });
     }
 
     if (admin.isActive === false) {
       return NextResponse.json({ error: 'This admin account is currently deactivated. Contact Super Admin.' }, { status: 403 });
     }
 
+    // Check account lockout status
+    const lockStatus = checkLoginAttempts(admin.username);
+    if (lockStatus.locked) {
+      return NextResponse.json(
+        {
+          error: `Security Lockout: Admin account is locked due to 5 consecutive failed attempts. Please try again in ${lockStatus.waitMinutes || 15} minutes.`,
+        },
+        { status: 429 }
+      );
+    }
+
+    // =========================================================================
     // STEP: Switch Channel or Resend OTP
-    if (step === 'resend_otp' || step === 'switch_channel') {
+    // =========================================================================
+    if (step === 'resend_otp' || step === 'switch_channel' || step === 'send_otp') {
+      // Cooldown check for Admin OTP dispatch
+      const cooldownCheck = checkOtpRequestCooldown(admin.username);
+      if (!cooldownCheck.allowed) {
+        return NextResponse.json(
+          { error: cooldownCheck.reason || 'Please wait before requesting another OTP.' },
+          { status: 429 }
+        );
+      }
+
       const selectedChannel: 'mobile' | 'email' = channel === 'email' ? 'email' : 'mobile';
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
+      const generatedOtp = generateSecureOtp(6);
 
       adminOtpStore.set(admin.username.toLowerCase(), {
         otp: generatedOtp,
@@ -57,24 +106,31 @@ export async function POST(request: Request) {
         adminId: admin.id,
       });
 
+      recordOtpDispatched(admin.username);
+      if (admin.phone) recordOtpDispatched(admin.phone);
+      if (admin.email) recordOtpDispatched(admin.email);
+
       let emailStatus: { delivered: boolean; error?: string } = { delivered: false };
       let smsStatus: { delivered: boolean; error?: string } = { delivered: false };
 
-      if (selectedChannel === 'email') {
+      // 1. ALWAYS dispatch to Admin Email (Zoho Mail & Gmail)
+      if (admin.email) {
         emailStatus = await sendOtpEmail({
           toEmail: admin.email,
           adminName: admin.name,
           otp: generatedOtp,
           roleTitle: admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin',
         });
-      } else {
-        smsStatus = await sendOtpSms({
+      }
+
+      // 2. Dispatch to Mobile (SMS / WhatsApp) if phone exists
+      if (admin.phone) {
+        sendOtpSms({
           phone: admin.phone,
           otp: generatedOtp,
           adminName: admin.name,
-        });
+        }).then((res) => { smsStatus = res; }).catch(() => {});
 
-        // Dispatch automated WhatsApp notification
         const waMsg = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello *${admin.name}*,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.\n\n*Home-Warrior Handcrafted Textiles*`;
         sendAutomatedWhatsAppNotification({
           phone: admin.phone,
@@ -82,56 +138,68 @@ export async function POST(request: Request) {
         }).catch((err) => console.error('[WhatsApp Admin OTP Notify Error]:', err));
       }
 
-      const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
-      const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const adminOtpText = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`;
-      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(adminOtpText)}`;
-      const arattaiUrl = createCustomerArattaiLink(admin.phone, adminOtpText);
+      console.log(`[Admin 2FA] Cryptographic OTP generated and sent to Email (${admin.email}) & Mobile (${admin.phone})`);
 
-      console.log(`[2FA Notification] Dispatched OTP ${generatedOtp} via ${selectedChannel.toUpperCase()} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
+      const message = selectedChannel === 'email'
+        ? (emailStatus.delivered
+            ? `Security OTP sent to your Email (${maskEmail(admin.email)})! Check your Inbox and Spam.`
+            : `Security OTP sent to your Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
+        : `Security OTP sent to your Email (${maskEmail(admin.email)}) and WhatsApp (${maskPhone(admin.phone)}).`;
 
       return NextResponse.json({
         success: true,
         channel: selectedChannel,
-        message: selectedChannel === 'email'
-          ? (emailStatus.delivered
-              ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your Inbox and SPAM folder.`
-              : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
-          : `Security OTP prepared for WhatsApp (${maskPhone(admin.phone)}). Click the green button to receive on WhatsApp!`,
-        whatsappUrl,
-        arattaiUrl,
-        quickFillOtp: generatedOtp,
+        requiresOtp: true,
+        message,
         emailDelivered: emailStatus.delivered,
         smsDelivered: smsStatus.delivered,
-        maskedTarget: selectedChannel === 'mobile' ? maskPhone(admin.phone) : maskEmail(admin.email),
+        maskedTarget: maskEmail(admin.email),
+        user: {
+          id: admin.id,
+          name: admin.name,
+          username: admin.username,
+          role: admin.role,
+          maskedPhone: maskPhone(admin.phone),
+          maskedEmail: maskEmail(admin.email),
+          phone: admin.phone,
+          email: admin.email,
+        },
       });
     }
 
-    // STEP 1: Verify Password & Sign In directly (No OTP barrier for valid password)
-    if (step === 'password' || step === 'direct' || (!step && !otp)) {
-      if (!password && step !== 'direct') {
+    // =========================================================================
+    // STEP 1: Verify Password & Sign In
+    // =========================================================================
+    if (step === 'password' || (!step && !otp)) {
+      if (!password || typeof password !== 'string') {
         return NextResponse.json({ error: 'Please enter Admin password' }, { status: 400 });
       }
 
       let isValid = false;
 
       // 1. Password verification against bcrypt hash
-      if (password && admin.passwordHash) {
+      if (admin.passwordHash) {
         isValid = await verifyPassword(password, admin.passwordHash);
       }
 
-      // 2. Default initial passwords fallback
       if (!isValid) {
-        if (admin.username === 'admin' && (password === 'admin12345' || password === 'admin' || password === 'Devanand@123' || step === 'direct')) isValid = true;
-        if (admin.username === 'manager' && (password === 'manager12345' || password === 'manager' || step === 'direct')) isValid = true;
-        if (admin.username === 'support' && (password === 'support12345' || password === 'support' || step === 'direct')) isValid = true;
+        const failure = recordFailedLogin(admin.username);
+        if (failure.locked) {
+          return NextResponse.json(
+            { error: 'Security alert: 5 incorrect password attempts reached. Account locked for 15 minutes.' },
+            { status: 429 }
+          );
+        }
+        return NextResponse.json(
+          { error: `Invalid password. ${failure.remainingAttempts} attempt(s) remaining before security lockout.` },
+          { status: 401 }
+        );
       }
 
-      if (!isValid) {
-        return NextResponse.json({ error: 'Invalid password. Please check and try again.' }, { status: 401 });
-      }
+      // Valid password: clear failure counters
+      clearFailedLogin(admin.username);
 
-      // Instant Direct Login with Password (sets secure cookie & returns token)
+      // Sign JWT Admin Token
       const token = await signAdminToken({
         id: admin.id,
         username: admin.username,
@@ -160,109 +228,61 @@ export async function POST(request: Request) {
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
         path: '/',
-        maxAge: 60 * 60 * 24 * 7,
+        maxAge: 60 * 60 * 24 * 7, // 7 days
       });
 
       return response;
     }
 
-    // STEP 1b: Request 2FA OTP explicitly (e.g. Forgot Password or 2FA request)
-    if (step === 'send_otp' || step === 'switch_channel' || step === 'resend_otp') {
-
-      // Generate 6-digit Admin 2FA Security OTP
-      const selectedChannel: 'mobile' | 'email' = channel === 'email' ? 'email' : 'mobile';
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-
-      adminOtpStore.set(admin.username.toLowerCase(), {
-        otp: generatedOtp,
-        channel: selectedChannel,
-        expiresAt: Date.now() + 5 * 60 * 1000,
-        adminId: admin.id,
-      });
-
-      let emailStatus: { delivered: boolean; error?: string } = { delivered: false };
-      let smsStatus: { delivered: boolean; error?: string } = { delivered: false };
-
-      if (selectedChannel === 'email') {
-        emailStatus = await sendOtpEmail({
-          toEmail: admin.email,
-          adminName: admin.name,
-          otp: generatedOtp,
-          roleTitle: admin.role === 'manager' ? 'Store Manager' : admin.role === 'support' ? 'Support Team' : 'Super Admin',
-        });
-      } else {
-        smsStatus = await sendOtpSms({
-          phone: admin.phone,
-          otp: generatedOtp,
-          adminName: admin.name,
-        });
-
-        // Dispatch automated WhatsApp notification
-        const waMsg = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello *${admin.name}*,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.\n\n*Home-Warrior Handcrafted Textiles*`;
-        sendAutomatedWhatsAppNotification({
-          phone: admin.phone,
-          message: waMsg,
-        }).catch((err) => console.error('[WhatsApp Admin OTP Notify Error]:', err));
-      }
-
-      const cleanPhone = admin.phone.replace(/[^0-9]/g, '');
-      const whatsappPhone = cleanPhone.length === 10 ? '91' + cleanPhone : cleanPhone;
-      const adminOtpText = `🔐 *Home-Warrior Admin Security 2FA*\n\nHello Sir/Mam,\nYour 6-Digit Admin Login Security Code is:\n\n👉 *${generatedOtp}*\n\n⏳ This code expires in 5 minutes.\nDo not share this code with anyone.`;
-      const whatsappUrl = `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(adminOtpText)}`;
-      const arattaiUrl = createCustomerArattaiLink(admin.phone, adminOtpText);
-
-      console.log(`[Admin 2FA] OTP ${generatedOtp} sent to ${selectedChannel}: ${selectedChannel === 'mobile' ? admin.phone : admin.email} (Email Delivered: ${emailStatus.delivered}, SMS Delivered: ${smsStatus.delivered})`);
-
-      return NextResponse.json({
-        success: true,
-        requiresOtp: true,
-        channel: selectedChannel,
-        user: {
-          id: admin.id,
-          name: admin.name,
-          username: admin.username,
-          role: admin.role,
-          maskedPhone: maskPhone(admin.phone),
-          maskedEmail: maskEmail(admin.email),
-          phone: admin.phone,
-          email: admin.email,
-        },
-        message: selectedChannel === 'email'
-          ? (emailStatus.delivered
-              ? `Real security OTP email delivered to ${maskEmail(admin.email)}! Please check your Inbox and SPAM folder.`
-              : `Security OTP sent to Email (${maskEmail(admin.email)}). Check Spam/Updates folder.`)
-          : `Security OTP prepared for WhatsApp (${maskPhone(admin.phone)}). Click the green button to receive on WhatsApp!`,
-        whatsappUrl,
-        arattaiUrl,
-        quickFillOtp: generatedOtp,
-        emailDelivered: emailStatus.delivered,
-        smsDelivered: smsStatus.delivered,
-      });
-    }
-
-    // STEP 2: Verify 6-digit OTP & Complete Admin Login
+    // =========================================================================
+    // STEP 2: Verify 6-digit 2FA OTP & Complete Admin Login
+    // =========================================================================
     if (step === 'otp' || otp) {
-      if (!otp) {
+      if (!otp || typeof otp !== 'string') {
         return NextResponse.json({ error: 'Please enter the 6-digit Security OTP' }, { status: 400 });
       }
 
-      const stored = adminOtpStore.get(admin.username.toLowerCase());
-      const isMasterOtp = otp.trim() === '887811' || otp.trim() === '123456';
+      const cleanOtp = otp.trim();
 
-      if (!isMasterOtp) {
-        if (!stored) {
-          return NextResponse.json({ error: 'OTP session expired or not found. Please login again.' }, { status: 400 });
-        }
-        if (Date.now() > stored.expiresAt) {
-          adminOtpStore.delete(admin.username.toLowerCase());
-          return NextResponse.json({ error: 'OTP code expired. Please request a new OTP.' }, { status: 400 });
-        }
-        if (stored.otp !== otp.trim()) {
-          return NextResponse.json({ error: 'Incorrect 6-digit OTP code. Please check and try again.' }, { status: 400 });
-        }
+      // Check OTP lockout
+      const otpLock = checkOtpVerificationStatus(admin.username);
+      if (otpLock.locked) {
+        return NextResponse.json(
+          { error: `Too many failed OTP attempts. 2FA verification locked for ${otpLock.waitMinutes || 15} minutes.` },
+          { status: 429 }
+        );
       }
 
+      const stored = adminOtpStore.get(admin.username.toLowerCase());
+      if (!stored) {
+        return NextResponse.json({ error: 'OTP session expired or not found. Please login again.' }, { status: 400 });
+      }
+      if (Date.now() > stored.expiresAt) {
+        adminOtpStore.delete(admin.username.toLowerCase());
+        return NextResponse.json({ error: 'OTP code expired. Please request a new OTP.' }, { status: 400 });
+      }
+
+      // Constant-time check
+      const isMatch = safeCompareStrings(stored.otp, cleanOtp);
+      if (!isMatch) {
+        const failure = recordFailedOtpVerification(admin.username);
+        if (failure.locked) {
+          adminOtpStore.delete(admin.username.toLowerCase());
+          return NextResponse.json(
+            { error: 'Security alert: 5 incorrect OTP attempts exceeded. Code invalidated and 2FA locked for 15 minutes.' },
+            { status: 429 }
+          );
+        }
+        return NextResponse.json(
+          { error: `Incorrect 6-digit OTP code. ${failure.remainingAttempts} attempt(s) remaining.` },
+          { status: 400 }
+        );
+      }
+
+      // Success: clear counters & delete stored OTP
       adminOtpStore.delete(admin.username.toLowerCase());
+      clearOtpVerificationAttempts(admin.username);
+      clearFailedLogin(admin.username);
 
       const token = await signAdminToken({
         id: admin.id,

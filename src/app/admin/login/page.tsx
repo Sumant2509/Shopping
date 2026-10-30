@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import React, { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
   Lock,
@@ -13,16 +13,13 @@ import {
   KeyRound,
   CheckCircle2,
   RefreshCw,
-  Smartphone,
   Mail,
   Eye,
   EyeOff,
   Crown,
   Briefcase,
   Headphones,
-  ExternalLink,
-  MessageSquare,
-  Zap,
+  ArrowLeft,
 } from 'lucide-react';
 
 type LoginRole = 'superadmin' | 'manager' | 'support';
@@ -35,48 +32,50 @@ interface RoleConfig {
   staffName: string;
   badge: string;
   icon: typeof Crown;
-  colorClass: string;
-  activeTabClass: string;
+  activeColor: string;
+  iconColor: string;
 }
 
 const ROLE_CONFIGS: Record<LoginRole, RoleConfig> = {
   superadmin: {
     role: 'superadmin',
     title: 'Super Admin Portal',
-    subtitle: 'Store Owner full master control & store operations',
+    subtitle: 'Store Owner & Operations Master Control',
     defaultUsername: 'admin',
     staffName: 'Sumant Kumar (Owner)',
     badge: 'Root Super Admin',
     icon: Crown,
-    colorClass: 'text-amber-400 border-amber-500/30 bg-amber-500/10',
-    activeTabClass: 'bg-terracotta-700 text-white border-amber-400 shadow-md',
+    activeColor: 'bg-terracotta-700 text-white border-amber-400 shadow-md',
+    iconColor: 'text-amber-300',
   },
   manager: {
     role: 'manager',
     title: 'Store Manager Portal',
-    subtitle: 'Products catalog, inventory, coupons, and orders management',
+    subtitle: 'Products, Inventory, Orders & Marketing',
     defaultUsername: 'manager',
-    staffName: 'Devanand Mandal (Store Manager)',
-    badge: 'Store Operations',
+    staffName: 'Devanand Mandal',
+    badge: 'Store Manager',
     icon: Briefcase,
-    colorClass: 'text-indigo-300 border-indigo-500/30 bg-indigo-500/10',
-    activeTabClass: 'bg-indigo-700 text-white border-indigo-400 shadow-md',
+    activeColor: 'bg-indigo-700 text-white border-indigo-300 shadow-md',
+    iconColor: 'text-indigo-300',
   },
   support: {
     role: 'support',
-    title: 'Support Team Portal',
-    subtitle: 'Customer orders, courier tracking, and review moderation',
+    title: 'Support Desk Portal',
+    subtitle: 'Courier Tracking, Customer Support & Reviews',
     defaultUsername: 'support',
-    staffName: 'Crafts Support & Inventory Lead',
-    badge: 'Dispatch & Support',
+    staffName: 'Crafts Support Lead',
+    badge: 'Support Staff',
     icon: Headphones,
-    colorClass: 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10',
-    activeTabClass: 'bg-emerald-700 text-white border-emerald-400 shadow-md',
+    activeColor: 'bg-emerald-700 text-white border-emerald-300 shadow-md',
+    iconColor: 'text-emerald-300',
   },
 };
 
-export default function AdminLoginPage() {
+function AdminLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectTarget = searchParams.get('redirect') || '/admin/dashboard';
   const [selectedRole, setSelectedRole] = useState<LoginRole>('superadmin');
   const [step, setStep] = useState<'password' | 'otp'>('password');
   const [username, setUsername] = useState('admin');
@@ -85,9 +84,6 @@ export default function AdminLoginPage() {
   const [channel, setChannel] = useState<'mobile' | 'email'>('mobile');
   const [otp, setOtp] = useState('');
   const [dispatchNotice, setDispatchNotice] = useState<string | null>(null);
-  const [whatsappUrl, setWhatsappUrl] = useState<string | null>(null);
-  const [arattaiUrl, setArattaiUrl] = useState<string | null>(null);
-  const [quickFillOtp, setQuickFillOtp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [verifiedUser, setVerifiedUser] = useState<{
@@ -103,44 +99,16 @@ export default function AdminLoginPage() {
 
   const activeConfig = ROLE_CONFIGS[selectedRole];
 
-  // Handle Role Switch
+  // Handle Role Switching
   const handleSelectRole = (role: LoginRole) => {
     setSelectedRole(role);
     setUsername(ROLE_CONFIGS[role].defaultUsername);
     setPassword('');
     setError(null);
+    setDispatchNotice(null);
   };
 
-  // Handle Direct 1-Click Login (Opens Dashboard instantly without OTP)
-  const handleDirectLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username,
-          password: password || (username === 'admin' ? 'admin12345' : `${username}12345`),
-          step: 'direct',
-        }),
-      });
-
-      const data = await res.json();
-      if (res.ok && data.success) {
-        router.push('/admin/dashboard');
-        router.refresh();
-      } else {
-        setError(data.error || 'Direct login failed');
-      }
-    } catch {
-      setError('Direct login error. Please check network connection.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Step 1: Verify Password
+  // Standard Password Submit
   const handlePasswordSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -165,11 +133,10 @@ export default function AdminLoginPage() {
         setVerifiedUser(data.user);
         setStep('otp');
         setChannel(data.channel || 'mobile');
-        if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
-        setDispatchNotice(data.message || `Security OTP dispatched to your ${data.channel === 'email' ? 'Email' : 'Mobile phone'}.`);
+        setDispatchNotice(data.message || `Security OTP dispatched to your registered ${data.channel === 'email' ? 'Email' : 'Phone'}.`);
       } else {
-        // Direct password login success! Redirect straight to admin dashboard
-        router.push('/admin/dashboard');
+        // Direct password login success!
+        router.push(redirectTarget);
         router.refresh();
       }
     } catch {
@@ -179,8 +146,8 @@ export default function AdminLoginPage() {
     }
   };
 
-  // Handle Forgot Admin Password - Directly sends 2FA OTP to registered Admin Phone / Email
-  const handleForgotAdminPassword = async () => {
+  // Forgot Password or Request 2FA OTP via Email/Mobile
+  const handleForgotAdminPassword = async (targetChannel: 'email' | 'mobile' = 'email') => {
     setLoading(true);
     setError(null);
     try {
@@ -189,7 +156,7 @@ export default function AdminLoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username,
-          channel,
+          channel: targetChannel,
           step: 'switch_channel',
         }),
       });
@@ -202,18 +169,14 @@ export default function AdminLoginPage() {
           name: activeConfig.staffName,
           username,
           role: selectedRole,
-          maskedPhone: data.maskedTarget || '+91 88*** ***07',
-          maskedEmail: 'su***@zohomail.in',
+          maskedPhone: '+91 88*** ***07',
+          maskedEmail: data.maskedTarget || 'sumantku2509@zohomail.in',
           phone: '+91 8878112007',
           email: 'sumantku2509@zohomail.in',
         });
         setStep('otp');
-        if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
-      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
-      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
-        if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
-        if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
-        setDispatchNotice(data.message || `Security OTP dispatched to your Admin ${channel === 'email' ? 'Email' : 'WhatsApp'}!`);
+        setChannel(targetChannel);
+        setDispatchNotice(data.message || `Security OTP sent to your registered Email (Zoho Mail & Gmail)!`);
       }
     } catch {
       setError('Failed to dispatch Admin OTP. Please check connection.');
@@ -222,41 +185,7 @@ export default function AdminLoginPage() {
     }
   };
 
-  // Switch 2FA channel (Mobile SMS / Email)
-  const handleSwitchChannel = async (newChannel: 'mobile' | 'email') => {
-    if (loading || newChannel === channel) return;
-    setChannel(newChannel);
-    setLoading(true);
-    setError(null);
-
-    try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username,
-          channel: newChannel,
-          step: 'switch_channel',
-        }),
-      });
-
-      const data = await res.json();
-      if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
-      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
-      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
-      if (data.success) {
-        setDispatchNotice(data.message || `New 2FA OTP dispatched via ${newChannel.toUpperCase()}.`);
-      } else if (data.error) {
-        setError(data.error);
-      }
-    } catch {
-      setError('Failed to switch verification channel.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle Step 2: OTP submit
+  // Handle OTP Submission
   const handleOtpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -278,7 +207,7 @@ export default function AdminLoginPage() {
       if (!res.ok || !data.success) {
         setError(data.error || 'Invalid 6-digit OTP code');
       } else {
-        router.push('/admin/dashboard');
+        router.push(redirectTarget);
         router.refresh();
       }
     } catch {
@@ -288,8 +217,8 @@ export default function AdminLoginPage() {
     }
   };
 
-  // Resend OTP
-  const handleResendOtp = async () => {
+  // Resend OTP to Email or Mobile
+  const handleResendOtp = async (targetChannel: 'email' | 'mobile' = 'email') => {
     setLoading(true);
     setError(null);
     try {
@@ -298,16 +227,14 @@ export default function AdminLoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username,
-          channel,
+          channel: targetChannel,
           step: 'resend_otp',
         }),
       });
       const data = await res.json();
-      if (data.whatsappUrl) setWhatsappUrl(data.whatsappUrl);
-      if (data.arattaiUrl) setArattaiUrl(data.arattaiUrl);
-      if (data.quickFillOtp) setQuickFillOtp(data.quickFillOtp);
       if (data.success) {
-        setDispatchNotice(`A new 6-digit Security OTP has been dispatched to your ${channel === 'mobile' ? 'Mobile Phone' : 'Email'}.`);
+        setChannel(targetChannel);
+        setDispatchNotice(data.message || `Fresh 6-digit Security OTP dispatched to your registered ${targetChannel === 'mobile' ? 'Mobile' : 'Email (Zoho Mail & Gmail)'}.`);
       } else if (data.error) {
         setError(data.error);
       }
@@ -318,222 +245,176 @@ export default function AdminLoginPage() {
     }
   };
 
+  const IconComponent = activeConfig.icon;
+
   return (
-    <div className="min-h-screen bg-[#1d120c] flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-craft-200">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="w-14 h-14 rounded-2xl bg-terracotta-700 text-white font-serif font-bold text-2xl flex items-center justify-center mx-auto border-2 border-amber-300 shadow-lg mb-4">
-          HW
-        </div>
-        <h2 className="font-serif font-bold text-2xl sm:text-3xl text-white tracking-tight">
-          Home-Warrior Admin
-        </h2>
-        <p className="mt-1 text-xs text-amber-300 font-medium uppercase tracking-wider">
-          {step === 'password'
-            ? activeConfig.title
-            : '2-Factor Security Verification (Mobile & Email)'}
-        </p>
+    <div className="min-h-screen bg-[#1d120c] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 text-craft-200 selection:bg-amber-500 selection:text-black">
+      {/* Background Subtle Ambient Glow */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div className="absolute -top-32 -right-32 w-96 h-96 rounded-full bg-amber-500/10 blur-[100px]" />
+        <div className="absolute -bottom-32 -left-32 w-96 h-96 rounded-full bg-terracotta-700/15 blur-[100px]" />
       </div>
 
-      <div className="mt-6 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        {/* Role Selector Tabs (Super Admin / Store Manager / Support Team) */}
-        {step === 'password' && (
-          <div className="mb-4 bg-[#2b1b14] border border-[#4d3224] rounded-2xl p-1.5 shadow-md flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleSelectRole('superadmin')}
-              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                selectedRole === 'superadmin'
-                  ? 'bg-terracotta-700 text-white border border-amber-300 shadow-md'
-                  : 'text-craft-400 hover:text-white hover:bg-[#382319]'
-              }`}
-            >
-              <Crown className="w-3.5 h-3.5 text-amber-300" />
-              <span>Super Admin</span>
-            </button>
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        {/* Brand Header with Rich Terracotta Badge */}
+        <div className="text-center mb-6">
+          <Link href="/" className="inline-block group mb-3">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#9e381f] via-[#be4727] to-[#d45d3c] text-white flex items-center justify-center mx-auto border-2 border-amber-300/80 shadow-xl shadow-terracotta-950/60 group-hover:scale-105 transition-transform duration-200">
+              <span className="font-serif font-black text-2xl tracking-tight text-white drop-shadow">
+                HW
+              </span>
+            </div>
+          </Link>
+          <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl font-serif">
+            Home-Warrior Admin
+          </h1>
+          <p className="mt-1 text-xs font-semibold text-amber-300 uppercase tracking-widest flex items-center justify-center gap-1.5">
+            <span>{activeConfig.badge}</span>
+            <span className="w-1 h-1 rounded-full bg-amber-500/50" />
+            <span className="text-craft-300">{activeConfig.title}</span>
+          </p>
+        </div>
 
-            <button
-              type="button"
-              onClick={() => handleSelectRole('manager')}
-              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                selectedRole === 'manager'
-                  ? 'bg-indigo-700 text-white border border-indigo-300 shadow-md'
-                  : 'text-craft-400 hover:text-white hover:bg-[#382319]'
-              }`}
-            >
-              <Briefcase className="w-3.5 h-3.5 text-indigo-300" />
-              <span>Store Manager</span>
-            </button>
+        {/* Main Dark Terracotta Card */}
+        <div className="bg-[#2b1b14] py-8 px-6 shadow-2xl rounded-3xl sm:px-9 border border-[#4d3224]">
+          
+          {/* Role Segmented Controller */}
+          {step === 'password' && (
+            <div className="mb-6 p-1.5 bg-[#1d120c] rounded-2xl flex items-center gap-1.5 border border-[#4d3224] shadow-inner">
+              <button
+                type="button"
+                onClick={() => handleSelectRole('superadmin')}
+                className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  selectedRole === 'superadmin'
+                    ? 'bg-terracotta-700 text-white border border-amber-300 shadow-md font-black'
+                    : 'text-craft-400 hover:text-white hover:bg-[#2b1b14]'
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-300" />
+                <span>Owner</span>
+              </button>
 
-            <button
-              type="button"
-              onClick={() => handleSelectRole('support')}
-              className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                selectedRole === 'support'
-                  ? 'bg-emerald-700 text-white border border-emerald-300 shadow-md'
-                  : 'text-craft-400 hover:text-white hover:bg-[#382319]'
-              }`}
-            >
-              <Headphones className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Support Team</span>
-            </button>
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={() => handleSelectRole('manager')}
+                className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  selectedRole === 'manager'
+                    ? 'bg-indigo-700 text-white border border-indigo-300 shadow-md font-black'
+                    : 'text-craft-400 hover:text-white hover:bg-[#2b1b14]'
+                }`}
+              >
+                <Briefcase className="w-3.5 h-3.5 text-indigo-300" />
+                <span>Manager</span>
+              </button>
 
-        <div className="bg-[#2b1b14] py-8 px-6 shadow-2xl rounded-3xl sm:px-10 border border-[#4d3224]">
-
-          {error && (
-            <div className="mb-5 bg-red-950/80 border border-red-600 text-red-200 p-3.5 rounded-xl flex items-center gap-2 text-xs">
-              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
-              <span>{error}</span>
+              <button
+                type="button"
+                onClick={() => handleSelectRole('support')}
+                className={`flex-1 py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
+                  selectedRole === 'support'
+                    ? 'bg-emerald-700 text-white border border-emerald-300 shadow-md font-black'
+                    : 'text-craft-400 hover:text-white hover:bg-[#2b1b14]'
+                }`}
+              >
+                <Headphones className="w-3.5 h-3.5 text-emerald-300" />
+                <span>Support</span>
+              </button>
             </div>
           )}
 
+          {/* Error Banner */}
+          {error && (
+            <div className="mb-5 bg-red-950/80 border border-red-600 text-red-200 p-3.5 rounded-2xl flex items-center gap-2.5 text-xs animate-in fade-in">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-400" />
+              <span className="font-medium">{error}</span>
+            </div>
+          )}
+
+          {/* Dispatch Notice Banner */}
           {dispatchNotice && (
-            <div className="mb-5 bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 p-3.5 rounded-xl flex items-center gap-2 text-xs">
+            <div className="mb-5 bg-emerald-950/80 border border-emerald-500/50 text-emerald-200 p-3.5 rounded-2xl flex items-center gap-2.5 text-xs animate-in fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>{dispatchNotice}</span>
+              <span className="font-medium">{dispatchNotice}</span>
             </div>
           )}
 
           {step === 'password' ? (
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              {/* Username Input with Crisp High-Contrast Style */}
+              {/* Account Identifier Info */}
+              <div className="bg-[#1d120c] border border-[#4d3224] rounded-2xl p-3 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-300 flex items-center justify-center font-bold border border-amber-500/25">
+                    <IconComponent className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-white">{activeConfig.staffName}</p>
+                    <p className="text-[11px] text-craft-400 font-mono">@{activeConfig.defaultUsername}</p>
+                  </div>
+                </div>
+                <span className="text-[10px] bg-[#2b1b14] border border-[#4d3224] text-amber-300 font-bold px-2 py-0.5 rounded-lg shadow-sm">
+                  Active Profile
+                </span>
+              </div>
+
+              {/* Username Input with High Contrast Styling */}
               <div>
                 <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5">
-                  {selectedRole === 'manager'
-                    ? 'Store Manager ID or Email'
-                    : selectedRole === 'support'
-                    ? 'Support Team ID or Email'
-                    : 'Super Admin ID or Email'}
+                  Admin Username or Email
                 </label>
                 <div className="relative">
-                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-600 z-10" />
+                  <User className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
                   <input
                     type="text"
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder={
-                      selectedRole === 'manager'
-                        ? 'manager (or operations@sumantcrafts.in)'
-                        : selectedRole === 'support'
-                        ? 'support (or support@sumantcrafts.in)'
-                        : 'admin (or sumantku2509@zohomail.in)'
-                    }
+                    placeholder="admin or sumantku2509@zohomail.in"
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
                     className="w-full pl-10 pr-3.5 py-3 rounded-xl border-2 border-craft-300 text-xs font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner font-mono"
                   />
                 </div>
               </div>
 
-              {/* Password Input with Eye Show/Hide Toggle */}
+              {/* Password Input with Eye Toggle */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider">
                     Password
                   </label>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleForgotAdminPassword}
-                      className="text-[11px] text-amber-400 hover:text-amber-300 font-semibold underline transition-colors"
-                    >
-                      Forgot Password?
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-[11px] text-craft-400 hover:text-craft-200 font-medium flex items-center gap-1 transition-colors"
-                    >
-                      {showPassword ? (
-                        <>
-                          <EyeOff className="w-3.5 h-3.5" />
-                          <span>Hide</span>
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Show</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleForgotAdminPassword('email')}
+                    className="text-[11px] text-amber-400 hover:text-amber-300 font-bold hover:underline"
+                  >
+                    Forgot Password?
+                  </button>
                 </div>
-
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-craft-600 z-10" />
+                  <Lock className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
                   <input
                     type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
+                    placeholder="Enter admin password"
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
-                    className="w-full pl-10 pr-12 py-3 rounded-xl border-2 border-craft-300 text-xs font-mono font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner"
+                    className="w-full pl-10 pr-10 py-3 rounded-xl border-2 border-craft-300 text-xs font-bold text-gray-900 focus:outline-none focus:border-amber-500 shadow-inner"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-900 p-1.5 rounded-lg transition-colors z-10"
-                    title={showPassword ? 'Hide password' : 'Show password'}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 p-1 z-10"
                   >
-                    {showPassword ? (
-                      <EyeOff className="w-4 h-4 text-terracotta-700" />
-                    ) : (
-                      <Eye className="w-4 h-4 text-gray-500" />
-                    )}
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-craft-400 mt-1.5 px-0.5">
-                  <span>Default: <strong className="text-amber-300 font-mono">admin12345</strong></span>
-                  <button
-                    type="button"
-                    onClick={handleForgotAdminPassword}
-                    className="text-emerald-400 hover:underline font-bold text-[11px]"
-                  >
-                    Login with 2FA OTP directly &rarr;
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
 
-              {/* 2FA Verification Channel Picker */}
-              <div>
-                <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5">
-                  Receive 2FA Security OTP via:
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setChannel('mobile')}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
-                      channel === 'mobile'
-                        ? 'bg-emerald-500/20 border-emerald-400 text-emerald-200 ring-1 ring-emerald-400'
-                        : 'bg-[#1d120c] border-[#4d3224] text-craft-400 hover:text-white'
-                    }`}
-                  >
-                    <MessageSquare className="w-4 h-4 text-emerald-400" />
-                    <span>WhatsApp OTP</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChannel('email')}
-                    className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl border text-xs font-bold transition-all ${
-                      channel === 'email'
-                        ? 'bg-amber-500/20 border-amber-400 text-amber-200 ring-1 ring-amber-400'
-                        : 'bg-[#1d120c] border-[#4d3224] text-craft-400 hover:text-white'
-                    }`}
-                  >
-                    <Mail className="w-4 h-4 text-amber-400" />
-                    <span>Email OTP</span>
-                  </button>
-                </div>
-              </div>
-
+              {/* Primary Sign In Button in Rich Terracotta */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 transition-colors mt-2"
+                className="w-full bg-terracotta-700 hover:bg-terracotta-800 text-white font-bold py-3.5 rounded-xl text-xs shadow-lg shadow-terracotta-950/50 flex items-center justify-center gap-2 transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60 uppercase tracking-wider mt-2 border border-amber-300/30"
               >
                 {loading ? (
                   <span>Signing In...</span>
@@ -541,151 +422,123 @@ export default function AdminLoginPage() {
                   <>
                     <ShieldCheck className="w-4 h-4" />
                     <span>Sign In to Admin Dashboard</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <ArrowRight className="w-4 h-4 ml-1" />
                   </>
                 )}
               </button>
 
-              <div className="pt-1">
+              {/* Login with Email OTP option */}
+              <div className="pt-2 text-center">
                 <button
                   type="button"
-                  onClick={handleDirectLogin}
+                  onClick={() => handleForgotAdminPassword('email')}
                   disabled={loading}
-                  className="w-full py-2.5 px-3 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
+                  className="text-xs text-amber-400 hover:text-amber-300 font-semibold flex items-center justify-center gap-1.5 mx-auto hover:underline"
                 >
-                  <Zap className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400" />
-                  <span>⚡ 1-Click Instant Login (Super Admin)</span>
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>Receive 6-digit Login Code on Email instead</span>
                 </button>
               </div>
             </form>
           ) : (
+            /* Step 2: Clean 2FA OTP Screen */
             <form onSubmit={handleOtpSubmit} className="space-y-4">
-              {/* Active Admin Profile Card */}
-              {verifiedUser && (
-                <div className="bg-[#1d120c] border border-[#4d3224] rounded-2xl p-3.5 flex items-center justify-between shadow-inner">
-                  <div>
-                    <p className="text-white text-xs font-bold">{verifiedUser.name}</p>
-                    <p className="text-craft-400 text-[11px] font-mono">@{verifiedUser.username}</p>
-                  </div>
-                  <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-1 rounded-lg border bg-amber-500/10 border-amber-500/30 text-amber-300">
-                    {verifiedUser.role}
-                  </span>
+              <div className="text-center py-2">
+                <div className="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center justify-center mx-auto mb-2 font-bold shadow-inner">
+                  <KeyRound className="w-6 h-6" />
                 </div>
-              )}
-
-              {/* Instant 1-Click Access Box */}
-              <div className="bg-[#0f241a] border border-emerald-500/40 rounded-2xl p-4 space-y-2.5 shadow-lg">
-                <div className="flex items-center justify-between">
-                  <span className="text-emerald-300 font-bold text-xs flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Admin Security Verification</span>
-                  </span>
-                  <span className="text-[10px] text-emerald-200 bg-emerald-500/25 px-2.5 py-0.5 rounded-full border border-emerald-400/40 font-bold tracking-wider uppercase">
-                    Admin
-                  </span>
-                </div>
-
-                <p className="text-xs text-craft-200 leading-relaxed">
-                  Security OTP has been dispatched to WhatsApp / SMS on{' '}
-                  <strong className="text-emerald-300 font-mono font-bold">{verifiedUser?.phone || '+91 8878112007'}</strong>{' '}
-                  and Zoho Mail <strong className="text-emerald-300 font-mono">{verifiedUser?.email || 'sumantku2509@zohomail.in'}</strong>.
+                <h3 className="text-base font-bold text-white">Enter Security Code</h3>
+                <p className="text-xs text-craft-400 mt-1 max-w-xs mx-auto">
+                  A 6-digit verification code was dispatched to your Email inbox (Zoho Mail & Gmail).
                 </p>
-
-                <button
-                  type="button"
-                  onClick={handleDirectLogin}
-                  disabled={loading}
-                  className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white text-xs font-black flex items-center justify-center gap-1.5 transition-all shadow-md mt-1"
-                >
-                  <Zap className="w-4 h-4 fill-white" />
-                  <span>⚡ 1-Click Instant Access (Open Dashboard Now)</span>
-                </button>
               </div>
 
               {/* OTP Input Field */}
               <div>
-                <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5">
-                  Enter 6-Digit Security OTP
+                <label className="block text-xs font-bold text-craft-200 uppercase tracking-wider mb-1.5 text-center">
+                  6-Digit Verification Code
                 </label>
                 <div className="relative">
-                  <KeyRound className="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 z-10" />
                   <input
                     type="text"
                     required
                     maxLength={6}
                     value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="Enter 6-digit OTP code"
+                    onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="• • • • • •"
                     style={{ color: '#1d120c', backgroundColor: '#ffffff' }}
-                    className="w-full pl-11 pr-3.5 py-3.5 rounded-xl border-2 border-amber-500 text-xl font-bold font-mono tracking-widest text-center text-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500/50 shadow-inner"
+                    className="w-full py-3.5 px-4 text-center rounded-2xl border-2 border-amber-500 text-2xl font-black font-mono tracking-[0.5em] text-gray-900 focus:outline-none focus:ring-4 focus:ring-amber-500/30 shadow-inner"
                   />
                 </div>
-                <p className="text-[11px] text-craft-400 mt-1.5 px-0.5">
-                  Code sent via Arattai / WhatsApp / Zoho Mail
-                </p>
-
-                {quickFillOtp && (
-                  <button
-                    type="button"
-                    onClick={() => setOtp(quickFillOtp)}
-                    className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-sm"
-                  >
-                    <Zap className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    <span>⚡ 1-Tap Quick-Fill Admin Code ({quickFillOtp})</span>
-                  </button>
-                )}
               </div>
 
+              {/* Verify OTP Button */}
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-bold py-3.5 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 transition-colors mt-2"
+                disabled={loading || otp.length !== 6}
+                className="w-full bg-terracotta-700 hover:bg-terracotta-800 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl text-xs shadow-md flex items-center justify-center gap-2 transition-all uppercase tracking-wider border border-amber-300/30"
               >
                 {loading ? (
-                  <span>Authenticating OTP...</span>
+                  <span>Verifying...</span>
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Verify OTP & Open Admin Dashboard</span>
+                    <span>Verify Code & Open Dashboard</span>
                   </>
                 )}
               </button>
 
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => setStep('password')}
-                  className="text-xs text-craft-400 hover:text-white"
-                >
-                  ← Back to Password
-                </button>
-                <button
-                  type="button"
-                  onClick={handleResendOtp}
-                  disabled={loading}
-                  className="text-xs text-amber-400 hover:text-amber-300 flex items-center gap-1 font-bold"
-                >
-                  <RefreshCw className="w-3 h-3" /> Resend OTP
-                </button>
+              {/* Secondary Navigation */}
+              <div className="flex flex-col gap-2 pt-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={() => setStep('password')}
+                    className="text-craft-400 hover:text-white flex items-center gap-1 font-medium"
+                  >
+                    <ArrowLeft className="w-3.5 h-3.5" />
+                    <span>Password Login</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleResendOtp('email')}
+                    disabled={loading}
+                    className="text-amber-400 hover:text-amber-300 font-bold flex items-center gap-1.5 bg-amber-500/10 px-3 py-1.5 rounded-lg border border-amber-500/30"
+                  >
+                    <Mail className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Resend to Email</span>
+                  </button>
+                </div>
               </div>
             </form>
           )}
 
-          <div className="mt-6 pt-5 border-t border-[#4d3224] flex items-center justify-between text-xs">
+          {/* Footer Navigation */}
+          <div className="mt-6 pt-5 border-t border-[#4d3224] flex items-center justify-between text-xs text-craft-400">
             <Link
               href="/"
-              className="text-craft-400 hover:text-white flex items-center gap-1.5 transition-colors"
+              className="hover:text-white flex items-center gap-1.5 transition-colors font-medium"
             >
               <Store className="w-3.5 h-3.5" />
               <span>Back to Storefront</span>
             </Link>
 
-            <span className="text-[10px] text-craft-400 flex items-center gap-1">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" /> Multi-Role 2FA Protected
+            <span className="text-[11px] text-craft-500">
+              🔒 256-bit SSL Secured
             </span>
           </div>
+
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AdminLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-craft-950 flex items-center justify-center text-white text-xs">Loading Admin Portal...</div>}>
+      <AdminLoginForm />
+    </Suspense>
   );
 }
