@@ -259,14 +259,14 @@ function AdminLoginForm() {
         {/* Brand Header with Rich Terracotta Badge */}
         <div className="text-center mb-6">
           <Link href="/" className="inline-block group mb-3">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-[#9e381f] via-[#be4727] to-[#d45d3c] text-white flex items-center justify-center mx-auto border-2 border-amber-300/80 shadow-xl shadow-terracotta-950/60 group-hover:scale-105 transition-transform duration-200">
-              <span className="font-serif font-black text-2xl tracking-tight text-white drop-shadow">
-                HW
-              </span>
-            </div>
+            <img
+              src="/images/home_warrior_logo.jpg"
+              alt="Home Warrior Logo"
+              className="w-20 h-20 rounded-2xl object-cover mx-auto border-2 border-amber-300/90 shadow-2xl shadow-terracotta-950/80 group-hover:scale-105 transition-transform duration-200"
+            />
           </Link>
           <h1 className="text-2xl font-bold tracking-tight text-white sm:text-3xl font-serif">
-            Home-Warrior Admin
+            Home Warrior Admin
           </h1>
           <p className="mt-1 text-xs font-semibold text-amber-300 uppercase tracking-widest flex items-center justify-center gap-1.5">
             <span>{activeConfig.badge}</span>

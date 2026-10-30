@@ -21,30 +21,35 @@ const outfit = Outfit({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://sumanthandmade.in"),
-  title: "Home-Warrior | Beautiful Handmade Doormats for Every Home",
-  description: "Handcrafted flower-shaped, round, and braided cotton doormats manufactured by Home-Warrior in India. Direct from maker with free all-India shipping on orders above ₹699.",
+  title: "Home Warrior | Home Decor • Doormats • A Cleaner Home",
+  description: "Handcrafted flower-shaped, round, and braided cotton doormats manufactured by Home Warrior in India. Direct from maker with free all-India shipping on orders above ₹699.",
+  icons: {
+    icon: "/images/home_warrior_logo.jpg",
+    apple: "/images/home_warrior_logo.jpg",
+  },
   keywords: [
+    "Home Warrior",
     "handmade doormat",
     "flower shaped doormat",
     "braided cotton mat",
     "crochet doormat India",
-    "Home-Warrior doormats",
+    "Home Warrior doormats",
     "washable doormat",
     "Indian handmade home decor",
     "entryway mat India"
   ],
-  authors: [{ name: "Home-Warrior" }],
+  authors: [{ name: "Home Warrior" }],
   openGraph: {
-    title: "Home-Warrior | Handcrafted Doormats Made in India",
-    description: "Explore our bestselling 20-inch handmade flower doormats and braided floor mats. Direct from maker, authentic Indian craftsmanship.",
+    title: "Home Warrior | Handcrafted Doormats Made in India",
+    description: "Explore our bestselling handmade flower doormats and braided floor mats. Direct from maker, authentic Indian craftsmanship.",
     url: "https://sumanthandmade.in",
-    siteName: "Home-Warrior",
+    siteName: "Home Warrior",
     images: [
       {
-        url: "/images/hero_doormat.jpg",
+        url: "/images/home_warrior_logo.jpg",
         width: 1200,
-        height: 630,
-        alt: "Handmade Flower Doormat at Indian Home Entrance",
+        height: 1200,
+        alt: "Home Warrior - Home Decor, Doormats, A Cleaner Home",
       },
     ],
     locale: "en_IN",
@@ -52,9 +57,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Home-Warrior | Beautiful Handmade Doormats",
-    description: "Handcrafted flower and braided doormats by Home-Warrior.",
-    images: ["/images/hero_doormat.jpg"],
+    title: "Home Warrior | Beautiful Handmade Doormats",
+    description: "Handcrafted flower and braided doormats by Home Warrior.",
+    images: ["/images/home_warrior_logo.jpg"],
   },
   robots: {
     index: true,

@@ -188,11 +188,13 @@ function LoginForm() {
           className="inline-flex items-center gap-2 mb-6 text-craft-600 hover:text-terracotta-700 transition-colors text-sm font-semibold"
         >
           <Store className="w-4 h-4" />
-          <span>Home-Warrior</span>
+          <span>Home Warrior</span>
         </Link>
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-terracotta-700 to-amber-700 flex items-center justify-center mx-auto mb-4 shadow-lg text-white">
-          <ShoppingBag className="w-8 h-8" />
-        </div>
+        <img
+          src="/images/home_warrior_logo.jpg"
+          alt="Home Warrior Logo"
+          className="w-20 h-20 rounded-2xl object-cover mx-auto mb-4 shadow-xl border-2 border-amber-400 ring-2 ring-terracotta-500/20"
+        />
         <h1 className="font-serif font-bold text-3xl text-craft-950">Customer Login</h1>
         <p className="mt-2 text-craft-600 text-sm">Instant OTP Sign In & Order Tracking</p>
       </div>

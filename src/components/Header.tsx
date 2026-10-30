@@ -91,15 +91,17 @@ export function Header() {
           {/* Brand Logo */}
           <div className="flex-1 lg:flex-none flex items-center justify-center lg:justify-start">
             <Link href="/" className="group flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-gradient-to-br from-terracotta-600 to-terracotta-800 flex items-center justify-center text-white shadow-warm border-2 border-amber-300">
-                <span className="font-serif font-bold text-xl tracking-tighter">HW</span>
-              </div>
+              <img
+                src="/images/home_warrior_logo.jpg"
+                alt="Home Warrior Logo"
+                className="w-12 h-12 rounded-full object-cover shadow-warm border-2 border-amber-400 group-hover:scale-105 transition-transform"
+              />
               <div className="flex flex-col">
                 <span className="font-serif font-bold text-xl sm:text-2xl text-craft-900 tracking-tight leading-none group-hover:text-terracotta-700 transition-colors">
-                  Home-Warrior
+                  Home Warrior
                 </span>
-                <span className="text-[11px] font-medium tracking-wider uppercase text-terracotta-700 mt-1">
-                  Handmade Indian Doormats
+                <span className="text-[10px] sm:text-[11px] font-semibold tracking-wider text-terracotta-700 mt-1 uppercase">
+                  Home Decor • Doormats • A Cleaner Home
                 </span>
               </div>
             </Link>

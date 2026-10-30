@@ -68,12 +68,14 @@ export function Footer() {
         {/* Brand & Story */}
         <div className="lg:col-span-2">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-terracotta-700 flex items-center justify-center text-white font-serif font-bold text-lg border border-amber-300">
-              HW
-            </div>
+            <img
+              src="/images/home_warrior_logo.jpg"
+              alt="Home Warrior Logo"
+              className="w-12 h-12 rounded-full object-cover border-2 border-amber-400 shadow-md"
+            />
             <div>
-              <span className="font-serif font-bold text-xl text-white">Home-Warrior</span>
-              <p className="text-xs text-amber-400">Handmade Indian Doormats & Mats</p>
+              <span className="font-serif font-bold text-xl text-white">Home Warrior</span>
+              <p className="text-xs text-amber-400">Home Decor • Doormats • A Cleaner Home</p>
             </div>
           </div>
           <p className="text-sm text-craft-400 leading-relaxed max-w-sm mb-6">
