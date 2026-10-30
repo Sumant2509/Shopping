@@ -24,7 +24,6 @@ import { useCart } from '@/lib/cart-context';
 import { formatPrice } from '@/lib/utils';
 import { lookupPincode } from '@/lib/shipping';
 import { PaymentMethod } from '@/lib/types';
-import { OnlinePaymentModal } from '@/components/OnlinePaymentModal';
 import { getOrderItemDisplayImage, getOrderItemColorDisplay } from '@/lib/custom-mat-svg';
 
 const INDIAN_STATES = [
@@ -59,11 +58,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Online Payment Modal & Store Settings State
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [storeUpiId, setStoreUpiId] = useState('8878112007@upi');
-  const [storeUpiName, setStoreUpiName] = useState('Home-Warrior');
-  const [isRazorpayLive, setIsRazorpayLive] = useState(false);
+  // Store Settings State
   const [razorpayKeyId, setRazorpayKeyId] = useState('');
 
   // Fetch store payment settings & prefill logged-in customer info
@@ -71,9 +66,6 @@ export default function CheckoutPage() {
     fetch('/api/settings/public')
       .then((res) => res.json())
       .then((data) => {
-        if (data.upiId) setStoreUpiId(data.upiId);
-        if (data.upiMerchantName) setStoreUpiName(data.upiMerchantName);
-        if (typeof data.isRazorpayLive === 'boolean') setIsRazorpayLive(data.isRazorpayLive);
         if (data.razorpayKeyId) setRazorpayKeyId(data.razorpayKeyId);
         if (typeof data.codFee === 'number') setCodFee(data.codFee);
         if (typeof data.enableCOD === 'boolean') {
@@ -164,7 +156,6 @@ export default function CheckoutPage() {
     razorpayPaymentId?: string;
     razorpaySignature?: string;
   }) => {
-    setShowPaymentModal(false);
     setLoading(true);
     setError(null);
 
@@ -215,35 +206,6 @@ export default function CheckoutPage() {
       setError(msg);
       setLoading(false);
     }
-  };
-
-  const handleDirectUpiOpen = (appName?: string) => {
-    setPaymentMethod('UPI');
-    setError(null);
-
-    const cleanPhone = phone.replace(/\D/g, '');
-    if (!name.trim()) {
-      setError('Please fill your delivery Name above before opening UPI');
-      return;
-    }
-    if (cleanPhone.length < 10) {
-      setError('Please enter your 10-digit mobile number above');
-      return;
-    }
-    if (!houseNo.trim() || !street.trim() || !/^\d{6}$/.test(pincode.trim())) {
-      setError('Please complete your delivery address above');
-      return;
-    }
-
-    const upiTxnRef = `HW${Date.now().toString().slice(-8)}`;
-    const upiUri = `upi://pay?pa=${encodeURIComponent(storeUpiId)}&pn=${encodeURIComponent(
-      storeUpiName
-    )}&am=${totalAmount}&cu=INR&tn=${encodeURIComponent(`Home-Warrior Order ${upiTxnRef}`)}`;
-
-    if (typeof window !== 'undefined') {
-      window.location.href = upiUri;
-    }
-    setShowPaymentModal(true);
   };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
@@ -331,95 +293,89 @@ export default function CheckoutPage() {
     // ─────────────────────────────────────────────────────────────
     // CASE 2: Online Payment via Razorpay Gateway (UPI, Cards, Net Banking)
     // ─────────────────────────────────────────────────────────────
-    // All online payments route directly through Razorpay Gateway
-    if (isRazorpayLive && (paymentMethod === 'UPI' || paymentMethod === 'CARD' || paymentMethod === 'NETBANKING')) {
-      setLoading(true);
-      try {
-        const initRes = await fetch('/api/payment/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            amount: finalPayable,
-            receipt: `rcpt_${Date.now()}`,
-          }),
-        });
+    // CASE 2: Online Payment via Razorpay Gateway (UPI, Cards, Net Banking, Wallets)
+    // ─────────────────────────────────────────────────────────────
+    setLoading(true);
+    try {
+      const initRes = await fetch('/api/payment/create-order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: finalPayable,
+          receipt: `rcpt_${Date.now()}`,
+        }),
+      });
 
-        const initData = await initRes.json();
-        if (!initRes.ok || !initData.orderId) {
-          throw new Error(initData.error || 'Failed to initialize online payment');
-        }
-
-        const scriptReady = await loadRazorpayScript();
-        if (!scriptReady || !(window as any).Razorpay) {
-          throw new Error('Payment gateway script failed to load. Please try again.');
-        }
-
-        const options = {
-          key: initData.keyId,
-          amount: initData.amount,
-          currency: initData.currency || 'INR',
-          name: 'Home-Warrior',
-          description: 'Handmade Doormats Order',
-          image: '/images/hero_doormat.jpg',
-          order_id: initData.orderId,
-          prefill: {
-            name: name.trim(),
-            email: email.trim(),
-            contact: cleanPhone,
-            method: paymentMethod === 'UPI' ? 'upi' : undefined,
-          },
-          config: {
-            display: {
-              sequence: ['upi', 'card', 'netbanking', 'wallet'],
-              preferences: {
-                show_default_blocks: true,
-              },
-            },
-          },
-          notes: {
-            address: `${houseNo}, ${street}, ${city}, ${state} - ${pincode}`,
-          },
-          theme: {
-            color: '#993d20',
-          },
-          modal: {
-            ondismiss: () => {
-              setLoading(false);
-            },
-          },
-          handler: async (response: {
-            razorpay_payment_id: string;
-            razorpay_order_id: string;
-            razorpay_signature: string;
-          }) => {
-            await handlePaymentSuccess({
-              paymentMethod,
-              razorpayOrderId: response.razorpay_order_id,
-              razorpayPaymentId: response.razorpay_payment_id,
-              razorpaySignature: response.razorpay_signature,
-            });
-          },
-        };
-
-        const rzpInstance = new (window as any).Razorpay(options);
-        rzpInstance.on('payment.failed', function (resp: any) {
-          setError(resp.error?.description || 'Payment was declined or cancelled.');
-          setLoading(false);
-        });
-
-        rzpInstance.open();
-        setLoading(false);
-        return;
-      } catch (err: unknown) {
-        console.error('Razorpay gateway error, falling back to payment modal:', err);
-        setLoading(false);
-        setShowPaymentModal(true);
-        return;
+      const initData = await initRes.json();
+      if (!initRes.ok || !initData.orderId) {
+        throw new Error(initData.error || 'Failed to initialize Razorpay payment');
       }
-    }
 
-    // Default for interactive demo/custom gateway if Razorpay not active:
-    setShowPaymentModal(true);
+      const scriptReady = await loadRazorpayScript();
+      if (!scriptReady || !(window as any).Razorpay) {
+        throw new Error('Razorpay gateway script could not be loaded. Please check your internet connection.');
+      }
+
+      const options = {
+        key: initData.keyId,
+        amount: initData.amount,
+        currency: initData.currency || 'INR',
+        name: 'Home-Warrior',
+        description: 'Handmade Indian Doormats Order',
+        image: '/images/hero_doormat.jpg',
+        order_id: initData.orderId,
+        prefill: {
+          name: name.trim(),
+          email: email.trim(),
+          contact: cleanPhone,
+        },
+        config: {
+          display: {
+            sequence: ['upi', 'card', 'netbanking', 'wallet'],
+            preferences: {
+              show_default_blocks: true,
+            },
+          },
+        },
+        notes: {
+          address: `${houseNo}, ${street}, ${city}, ${state} - ${pincode}`,
+        },
+        theme: {
+          color: '#993d20',
+        },
+        modal: {
+          ondismiss: () => {
+            setLoading(false);
+          },
+        },
+        handler: async (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) => {
+          await handlePaymentSuccess({
+            paymentMethod,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+        },
+      };
+
+      const rzpInstance = new (window as any).Razorpay(options);
+      rzpInstance.on('payment.failed', function (resp: any) {
+        setError(resp.error?.description || 'Payment was declined or cancelled. Please try again.');
+        setLoading(false);
+      });
+
+      rzpInstance.open();
+      setLoading(false);
+    } catch (err: unknown) {
+      console.error('Razorpay gateway error:', err);
+      const msg = err instanceof Error ? err.message : 'Error launching Razorpay payment gateway.';
+      setError(msg);
+      setLoading(false);
+    }
   };
 
   return (
@@ -630,10 +586,11 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="space-y-3">
-                  {/* UPI */}
+                  {/* Razorpay Online Payment */}
                   <div
-                    className={`p-4 rounded-2xl border transition-all ${
-                      paymentMethod === 'UPI'
+                    onClick={() => setPaymentMethod('UPI')}
+                    className={`p-5 rounded-2xl border cursor-pointer transition-all ${
+                      paymentMethod !== 'COD'
                         ? 'border-terracotta-600 bg-terracotta-50/70 ring-2 ring-terracotta-400'
                         : 'border-craft-200 hover:border-craft-300 bg-white'
                     }`}
@@ -642,165 +599,70 @@ export default function CheckoutPage() {
                       <input
                         type="radio"
                         name="payment"
-                        checked={paymentMethod === 'UPI'}
+                        checked={paymentMethod !== 'COD'}
                         onChange={() => setPaymentMethod('UPI')}
                         className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
                       />
                       <div className="flex-1">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
                           <div className="flex items-center gap-2">
-                            <QrCode className="w-4 h-4 text-terracotta-700" />
-                            <span className="font-bold text-xs sm:text-sm text-craft-900">
-                              UPI (Google Pay / PhonePe / Paytm / BHIM)
+                            <ShieldCheck className="w-4 h-4 text-terracotta-700" />
+                            <span className="font-bold text-sm text-craft-950">
+                              Online Payment via Razorpay
                             </span>
                           </div>
-                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
-                            Fastest • Instant App Open
+                          <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-0.5 rounded-full">
+                            100% Safe & Instant
                           </span>
                         </div>
-                        <p className="text-[11px] text-craft-500 mt-1">
-                          PhonePe, Google Pay, ya Paytm seedha aapke phone me khulega.
+                        <p className="text-xs text-craft-600 mt-1.5 leading-relaxed">
+                          Pay securely using any UPI app (Google Pay, PhonePe, Paytm), Debit/Credit Cards (RuPay, Visa, Mastercard), or Net Banking.
                         </p>
+
+                        {/* Supported Badges */}
+                        <div className="flex flex-wrap items-center gap-1.5 mt-3 pt-2.5 border-t border-terracotta-200/70 text-[11px] font-medium text-craft-700">
+                          <span className="bg-white px-2 py-0.5 rounded-md border border-craft-200 font-bold text-emerald-700">Google Pay</span>
+                          <span className="bg-white px-2 py-0.5 rounded-md border border-craft-200 font-bold text-purple-700">PhonePe</span>
+                          <span className="bg-white px-2 py-0.5 rounded-md border border-craft-200 font-bold text-sky-700">Paytm</span>
+                          <span className="bg-white px-2 py-0.5 rounded-md border border-craft-200 font-bold text-amber-700">Any UPI / QR</span>
+                          <span className="bg-white px-2 py-0.5 rounded-md border border-craft-200 text-craft-700">Cards</span>
+                          <span className="bg-white px-2 py-0.5 rounded-md border border-craft-200 text-craft-700">Net Banking</span>
+                        </div>
                       </div>
                     </label>
-
-                    {paymentMethod === 'UPI' && (
-                      <div className="mt-3 pt-3 border-t border-terracotta-200/80 space-y-2">
-                        <div className="flex items-center justify-between text-[11px] font-bold text-craft-800">
-                          <span className="flex items-center gap-1.5 text-terracotta-800">
-                            <Smartphone className="w-3.5 h-3.5 text-terracotta-700" />
-                            <span>1-Tap UPI: Seedha App Kholein</span>
-                          </span>
-                          <span className="text-[10px] text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-bold">
-                            Direct App Pay
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => handleDirectUpiOpen('gpay')}
-                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-emerald-500/40 bg-white hover:bg-emerald-50 hover:border-emerald-600 text-center transition-all shadow-sm active:scale-95 group"
-                          >
-                            <span className="text-xs font-bold text-gray-900 group-hover:text-emerald-700">Google Pay</span>
-                            <span className="text-[10px] text-emerald-700 font-bold">GPay Open &rarr;</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDirectUpiOpen('phonepe')}
-                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-purple-500/40 bg-white hover:bg-purple-50 hover:border-purple-600 text-center transition-all shadow-sm active:scale-95 group"
-                          >
-                            <span className="text-xs font-bold text-gray-900 group-hover:text-purple-700">PhonePe</span>
-                            <span className="text-[10px] text-purple-700 font-bold">PhonePe Open &rarr;</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDirectUpiOpen('paytm')}
-                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-sky-500/40 bg-white hover:bg-sky-50 hover:border-sky-600 text-center transition-all shadow-sm active:scale-95 group"
-                          >
-                            <span className="text-xs font-bold text-gray-900 group-hover:text-sky-700">Paytm</span>
-                            <span className="text-[10px] text-sky-700 font-bold">Paytm Open &rarr;</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDirectUpiOpen('any')}
-                            className="flex flex-col items-center justify-center p-2.5 rounded-xl border-2 border-amber-500/40 bg-white hover:bg-amber-50 hover:border-amber-600 text-center transition-all shadow-sm active:scale-95 group"
-                          >
-                            <span className="text-xs font-bold text-gray-900 group-hover:text-amber-700">Any UPI</span>
-                            <span className="text-[10px] text-amber-700 font-bold">BHIM / CRED &rarr;</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
                   </div>
-
-                  {/* Cards */}
-                  <label
-                    className={`flex items-start gap-3.5 p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'CARD'
-                        ? 'border-terracotta-600 bg-terracotta-50/70 ring-2 ring-terracotta-400'
-                        : 'border-craft-200 hover:border-craft-300 bg-white'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === 'CARD'}
-                      onChange={() => setPaymentMethod('CARD')}
-                      className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-terracotta-700" />
-                        <span className="font-bold text-xs sm:text-sm text-craft-900">
-                          Credit & Debit Cards (RuPay, Visa, Mastercard)
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-craft-500 mt-1">
-                        All Indian & International bank cards with instant OTP verification (Processed via Razorpay).
-                      </p>
-                    </div>
-                  </label>
-
-                  {/* Net Banking */}
-                  <label
-                    className={`flex items-start gap-3.5 p-4 rounded-2xl border cursor-pointer transition-all ${
-                      paymentMethod === 'NETBANKING'
-                        ? 'border-terracotta-600 bg-terracotta-50/70 ring-2 ring-terracotta-400'
-                        : 'border-craft-200 hover:border-craft-300 bg-white'
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name="payment"
-                      checked={paymentMethod === 'NETBANKING'}
-                      onChange={() => setPaymentMethod('NETBANKING')}
-                      className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
-                    />
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <Building className="w-4 h-4 text-terracotta-700" />
-                        <span className="font-bold text-xs sm:text-sm text-craft-900">
-                          Net Banking (SBI, HDFC, ICICI, Axis & 50+ Banks)
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-craft-500 mt-1">
-                        Direct bank-to-bank transfer across 50+ Indian banks (Processed via Razorpay).
-                      </p>
-                    </div>
-                  </label>
 
                   {/* Cash on Delivery */}
                   {enableCOD && (
-                    <label
-                      className={`flex items-start gap-3.5 p-4 rounded-2xl border cursor-pointer transition-all ${
+                    <div
+                      onClick={() => setPaymentMethod('COD')}
+                      className={`p-5 rounded-2xl border cursor-pointer transition-all ${
                         paymentMethod === 'COD'
                           ? 'border-terracotta-600 bg-terracotta-50/70 ring-2 ring-terracotta-400'
                           : 'border-craft-200 hover:border-craft-300 bg-white'
                       }`}
                     >
-                      <input
-                        type="radio"
-                        name="payment"
-                        checked={paymentMethod === 'COD'}
-                        onChange={() => setPaymentMethod('COD')}
-                        className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <Banknote className="w-4 h-4 text-terracotta-700" />
-                          <span className="font-bold text-xs sm:text-sm text-craft-900">
-                            Cash on Delivery (COD)
-                          </span>
+                      <label className="flex items-start gap-3.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="payment"
+                          checked={paymentMethod === 'COD'}
+                          onChange={() => setPaymentMethod('COD')}
+                          className="mt-1 text-terracotta-700 focus:ring-terracotta-500"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <Banknote className="w-4 h-4 text-terracotta-700" />
+                            <span className="font-bold text-sm text-craft-950">
+                              Cash on Delivery (COD)
+                            </span>
+                          </div>
+                          <p className="text-xs text-craft-600 mt-1 leading-relaxed">
+                            Pay in cash or scan courier QR code upon doorstep delivery ({codFee > 0 ? `+${formatPrice(codFee)} handling fee` : 'No extra fee'}).
+                          </p>
                         </div>
-                        <p className="text-[11px] text-craft-500 mt-1">
-                          Pay cash or scan courier QR code upon doorstep delivery ({codFee > 0 ? `+${formatPrice(codFee)} handling fee` : 'No extra fee'}).
-                        </p>
-                      </div>
-                    </label>
+                      </label>
+                    </div>
                   )}
                 </div>
               </div>
@@ -949,24 +811,6 @@ export default function CheckoutPage() {
           </div>
         </form>
       </main>
-
-      <OnlinePaymentModal
-        isOpen={showPaymentModal}
-        onClose={() => {
-          setShowPaymentModal(false);
-          setLoading(false);
-        }}
-        amount={totalAmount}
-        customerName={name}
-        customerPhone={phone}
-        customerEmail={email}
-        upiId={storeUpiId}
-        upiMerchantName={storeUpiName}
-        isRazorpayLive={isRazorpayLive}
-        razorpayKeyId={razorpayKeyId}
-        initialMethod={paymentMethod}
-        onSuccess={handlePaymentSuccess}
-      />
 
       <Footer />
     </div>
