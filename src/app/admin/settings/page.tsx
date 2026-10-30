@@ -435,13 +435,17 @@ export default function AdminSettingsPage() {
                 <span>Online Payment & Razorpay Gateway Settings</span>
               </h2>
               <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
-                settings.razorpayKeyId && settings.razorpayKeySecret && !settings.razorpayKeyId.includes('demo')
-                  ? 'bg-emerald-100 text-emerald-800'
-                  : 'bg-amber-100 text-amber-900'
+                settings.razorpayKeyId?.startsWith('rzp_live_') && settings.razorpayKeySecret
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  : settings.razorpayKeyId?.startsWith('rzp_test_')
+                  ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                  : 'bg-craft-100 text-craft-700'
               }`}>
-                {settings.razorpayKeyId && settings.razorpayKeySecret && !settings.razorpayKeyId.includes('demo')
-                  ? '🟢 Live Gateway Active'
-                  : '🟡 Test / Instant UPI Mode'}
+                {settings.razorpayKeyId?.startsWith('rzp_live_') && settings.razorpayKeySecret
+                  ? '🟢 Live Gateway Active (Real Money)'
+                  : settings.razorpayKeyId?.startsWith('rzp_test_')
+                  ? '⚠️ Test / Demo Mode (No Real Money)'
+                  : '⚪ Not Configured'}
               </span>
             </div>
 
@@ -518,6 +522,16 @@ export default function AdminSettingsPage() {
                     onChange={(e) => setSettings({ ...settings, razorpayKeyId: e.target.value })}
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-craft-300 font-mono focus:outline-none focus:border-terracotta-600"
                   />
+                  {settings.razorpayKeyId?.startsWith('rzp_test_') && (
+                    <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900 font-medium">
+                      ⚠️ <strong>Demo Mode:</strong> This key starts with <code>rzp_test_</code>. Payments are simulated tests and <u>no real money</u> goes to your bank account. Replace this with your <code>rzp_live_...</code> key to get real customer payments!
+                    </div>
+                  )}
+                  {settings.razorpayKeyId?.startsWith('rzp_live_') && (
+                    <div className="mt-1.5 p-2 bg-emerald-50 border border-emerald-200 rounded-lg text-[11px] text-emerald-900 font-medium">
+                      ✅ <strong>Live Mode:</strong> Real payments will be received and deposited to your bank account!
+                    </div>
+                  )}
                   <p className="text-[10px] text-craft-500 mt-1">
                     Found in Razorpay Dashboard ➔ Settings ➔ API Keys.
                   </p>
