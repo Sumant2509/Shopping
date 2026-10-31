@@ -3,6 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { cookies } from 'next/headers';
 import { verifyAdminToken } from '@/lib/auth';
+import { getMongoDb } from '@/lib/mongodb';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,63 @@ async function checkAdminAuth(): Promise<boolean> {
   if (!token) return false;
   const admin = await verifyAdminToken(token);
   return Boolean(admin);
+}
+
+// Helper to save image to MongoDB Atlas & optionally local cache
+async function persistImage(
+  buffer: Buffer,
+  uniqueName: string,
+  mimeType: string,
+  originalFilename: string
+): Promise<string> {
+  let savedToMongo = false;
+
+  // 1. Try persisting to MongoDB Atlas (Persistent Cloud Storage)
+  try {
+    const mongo = await getMongoDb();
+    if (mongo) {
+      await mongo.collection('uploaded_images').updateOne(
+        { id: uniqueName },
+        {
+          $set: {
+            id: uniqueName,
+            filename: originalFilename,
+            mimeType,
+            data: buffer.toString('base64'),
+            size: buffer.length,
+            createdAt: new Date().toISOString(),
+          },
+        },
+        { upsert: true }
+      );
+      savedToMongo = true;
+    }
+  } catch (mongoErr) {
+    console.warn('[Upload API] MongoDB save warning:', mongoErr);
+  }
+
+  // 2. Try saving to local filesystem if writable (dev environment)
+  let savedToLocal = false;
+  try {
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    await fs.mkdir(uploadDir, { recursive: true });
+    const filePath = path.join(uploadDir, uniqueName);
+    await fs.writeFile(filePath, buffer);
+    savedToLocal = true;
+  } catch {
+    // Expected on read-only serverless filesystems (e.g. Vercel /var/task)
+  }
+
+  if (savedToMongo) {
+    return `/api/images/${encodeURIComponent(uniqueName)}`;
+  }
+
+  if (savedToLocal) {
+    return `/uploads/${uniqueName}`;
+  }
+
+  // 3. Fallback for serverless if DB is temporarily unavailable: Inline Base64 Data URL
+  return `data:${mimeType};base64,${buffer.toString('base64')}`;
 }
 
 export async function POST(req: NextRequest) {
@@ -67,17 +125,14 @@ export async function POST(req: NextRequest) {
       else if (mimeType.includes('svg')) ext = 'svg';
       else if (mimeType.includes('avif')) ext = 'avif';
 
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-      await fs.mkdir(uploadDir, { recursive: true });
-
       const safeBase = path.basename(filename || 'mat').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 30);
       const uniqueName = `${safeBase}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-      const filePath = path.join(uploadDir, uniqueName);
 
-      await fs.writeFile(filePath, buffer);
+      const url = await persistImage(buffer, uniqueName, mimeType, filename || uniqueName);
+
       return NextResponse.json({
         success: true,
-        urls: [`/uploads/${uniqueName}`],
+        urls: [url],
       });
     }
 
@@ -91,9 +146,6 @@ export async function POST(req: NextRequest) {
     if (files.length === 0) {
       return NextResponse.json({ error: 'No files uploaded' }, { status: 400 });
     }
-
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-    await fs.mkdir(uploadDir, { recursive: true });
 
     const savedUrls: string[] = [];
 
@@ -127,13 +179,12 @@ export async function POST(req: NextRequest) {
         .slice(0, 30);
 
       const uniqueName = `mat-${originalBase || 'img'}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`;
-      const filePath = path.join(uploadDir, uniqueName);
 
       const arrayBuffer = await file.arrayBuffer();
       const buffer = Buffer.from(arrayBuffer);
-      await fs.writeFile(filePath, buffer);
 
-      savedUrls.push(`/uploads/${uniqueName}`);
+      const url = await persistImage(buffer, uniqueName, file.type, file.name);
+      savedUrls.push(url);
     }
 
     return NextResponse.json({
@@ -159,18 +210,25 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const url = searchParams.get('url');
 
-    if (!url || !url.startsWith('/uploads/')) {
+    if (!url) {
       return NextResponse.json({ error: 'Invalid file target for deletion' }, { status: 400 });
     }
 
     const filename = path.basename(url);
-    const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
 
+    // Delete from MongoDB Atlas
     try {
+      const mongo = await getMongoDb();
+      if (mongo) {
+        await mongo.collection('uploaded_images').deleteOne({ id: filename });
+      }
+    } catch {}
+
+    // Delete from local filesystem if exists
+    try {
+      const filePath = path.join(process.cwd(), 'public', 'uploads', filename);
       await fs.unlink(filePath);
-    } catch {
-      // File might already be gone, ignore
-    }
+    } catch {}
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

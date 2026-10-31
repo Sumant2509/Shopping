@@ -1,6 +1,8 @@
 import { MongoClient, Db } from 'mongodb';
 
-const uri = process.env.MONGODB_URI || '';
+const uri =
+  process.env.MONGODB_URI ||
+  'mongodb+srv://sumant:Ram2509%40@cluster0.yo1ya6l.mongodb.net/sumant_crafts?retryWrites=true&w=majority';
 const options = {};
 
 let client: MongoClient | null = null;
