@@ -384,8 +384,8 @@ const INITIAL_DATA: DatabaseSchema = {
     upiId: "8878112007@upi",
     upiMerchantName: "Home-Warrior",
     enableUpiPayment: true,
-    razorpayKeyId: "rzp_live_TuTWHkFjHu8I4P",
-    razorpayKeySecret: "PosC2Vu3aAMiEZmkO3RIUclR",
+    razorpayKeyId: "rzp_live_TuTWHkFjHu8l4P",
+    razorpayKeySecret: "PosC2Vu3aAMiEZmkO3RIUcIR",
     enableRazorpay: true
   },
   adminUsers: [
